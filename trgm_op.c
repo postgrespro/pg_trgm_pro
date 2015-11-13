@@ -621,8 +621,7 @@ cnt_sml(TRGM *trg1, TRGM *trg2)
  * Binary search for trigrams
  */
 static trgm *
-bsearch_trgm(trgm *key, trgm *base, const bool *baseentry, size_t num,
-			int (*cmp)(const void *key, const void *elt))
+bsearch_trgm(trgm *key, trgm *base, const bool *baseentry, size_t num)
 {
 	size_t		start = 0,
 				end = num;
@@ -632,18 +631,18 @@ bsearch_trgm(trgm *key, trgm *base, const bool *baseentry, size_t num,
 	{
 		size_t mid = start + (end - start) / 2;
 
-		result = cmp(key, base + mid);
+		result = comp_trgm(key, base + mid);
  		if (result < 0)
 			end = mid;
 		else if (result > 0)
 			start = mid + 1;
 		else if (baseentry[mid])
 		{
-			void *res = bsearch_trgm(key, base, baseentry, mid, cmp);
+			void *res = bsearch_trgm(key, base, baseentry, mid);
 			if (res)
 				return res;
 			else
-				return bsearch_trgm(key, base + (mid + 1), baseentry, num - mid, cmp);
+				return bsearch_trgm(key, base + (mid + 1), baseentry, num - mid);
 		}
 		else
 			return base + mid;
@@ -680,12 +679,12 @@ cnt_substring_sml(TRGM *trg1, TRGM *trg2)
 		PG_RETURN_FLOAT4((float4) 0.0);
 
 	trg1entry = (bool *) palloc(sizeof(bool) * len1);
-	memset(trg1entry, 0, len1);
+	memset(trg1entry, false, len1);
 	trg2entry = (bool *) palloc(sizeof(bool) * len2);
 
 	for (i = 0; i < len2; i++)
 	{
-		trgm   *found = bsearch_trgm(ptr2, ptr1, trg1entry, len1, comp_trgm);
+		trgm   *found = bsearch_trgm(ptr2, ptr1, trg1entry, len1);
 		if (found)
 		{
 			int foundindex = found - ptr1;
@@ -704,7 +703,7 @@ cnt_substring_sml(TRGM *trg1, TRGM *trg2)
 			if (upper > lower)
 			{
 				int count_lower = 0;
-				for (j = lower + 1; j <= upper; j++)
+				for (j = lower; j <= upper; j++)
 				{
 					if (trg2entry[j])
 					{
@@ -734,8 +733,6 @@ cnt_substring_sml(TRGM *trg1, TRGM *trg2)
 
 		ptr2++;
 	}
-
-	cnt_max = CALCSML(count, len1, len2);
 
 	pfree(trg1entry);
 	pfree(trg2entry);
