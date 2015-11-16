@@ -664,8 +664,7 @@ cnt_substring_sml(TRGM *trg1, TRGM *trg2)
 				upper = -1;
 	float4		cnt_max = (float4) 0.0,
 				cnt_cur;
-	int			i,
-				j;
+	int			i;
 	bool	   *trg1entry,
 			   *trg2entry;
 
@@ -699,39 +698,31 @@ cnt_substring_sml(TRGM *trg1, TRGM *trg2)
 			if (lower == -1)
 				lower = i;
 			upper = i;
-
-			if (upper > lower)
-			{
-				int count_lower = 0;
-				for (j = lower; j <= upper; j++)
-				{
-					if (trg2entry[j])
-					{
-						count_lower++;
-						len_cur = upper - j + 1;
-						cnt_cur = CALCSML(count - count_lower, len1, len_cur);
-
-						if (cnt_cur > cnt_max)
-						{
-							cnt_max = cnt_cur;
-							lower = j;
-
-							count -= count_lower;
-							count_lower = 0;
-						}
-					}
-				}
-			}
-			else
-			{
-				len_cur = upper - lower + 1;
-				cnt_max = CALCSML(count, len1, len_cur);
-			}
 		}
 		else
 			trg2entry[i] = false;
 
 		ptr2++;
+	}
+
+	if (lower > -1)
+	{
+		int count_lower = count;
+		for (i = lower; i <= upper; i++)
+		{
+			if (trg2entry[i])
+			{
+				len_cur = upper - i + 1;
+				cnt_cur = CALCSML(count_lower, len1, len_cur);
+
+				if (cnt_cur > cnt_max)
+				{
+					cnt_max = cnt_cur;
+					count = count_lower;
+				}
+				count_lower--;
+			}
+		}
 	}
 
 	pfree(trg1entry);
