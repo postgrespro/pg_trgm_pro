@@ -116,7 +116,6 @@ extern float4 trgm_limit;
 extern uint32 trgm2int(trgm *ptr);
 extern void compact_trigram(trgm *tptr, char *str, int bytelen);
 extern TRGM *generate_trgm(char *str, int slen);
-extern TRGM *generate_simple_trgm(char *str, int slen, int sort);
 extern TRGM *generate_wildcard_trgm(const char *str, int slen);
 extern float4 cnt_sml(TRGM *trg1, TRGM *trg2);
 extern float4 cnt_substring_sml(TRGM *trg1, TRGM *trg2);

@@ -167,37 +167,20 @@ make_trigrams(trgm *tptr, char *str, int bytelen, int charlen)
 	return tptr;
 }
 
-static TRGM *
-generate_trgm_only(char *str, int slen, int *len)
+static int
+generate_trgm_only(trgm *trg, char *str, int slen)
 {
-	TRGM	   *trg;
-	char	   *buf;
 	trgm	   *tptr;
+	char	   *buf;
 	int			charlen,
 				bytelen;
 	char	   *bword,
 			   *eword;
 
-	/*
-	 * Guard against possible overflow in the palloc requests below.  (We
-	 * don't worry about the additive constants, since palloc can detect
-	 * requests that are a little above MaxAllocSize --- we just need to
-	 * prevent integer overflow in the multiplications.)
-	 */
-	if ((Size) (slen / 2) >= (MaxAllocSize / (sizeof(trgm) * 3)) ||
-		(Size) slen >= (MaxAllocSize / pg_database_encoding_max_length()))
-		ereport(ERROR,
-				(errcode(ERRCODE_PROGRAM_LIMIT_EXCEEDED),
-				 errmsg("out of memory")));
-
-	trg = (TRGM *) palloc(TRGMHDRSIZE + sizeof(trgm) * (slen / 2 + 1) *3);
-	trg->flag = ARRKEY;
-	SET_VARSIZE(trg, TRGMHDRSIZE);
-
 	if (slen + LPADDING + RPADDING < 3 || slen == 0)
-		return trg;
+		return 0;
 
-	tptr = GETARR(trg);
+	tptr = trg;
 
 	/* Allocate a buffer for case-folded, blank-padded words */
 	buf = (char *) palloc(slen * pg_database_encoding_max_length() + 4);
@@ -237,8 +220,23 @@ generate_trgm_only(char *str, int slen, int *len)
 
 	pfree(buf);
 
-	*len = tptr - GETARR(trg);
-	return trg;
+	return tptr - trg;
+}
+
+static void
+protect_out_of_mem(int slen)
+{
+	/*
+	 * Guard against possible overflow in the palloc requests below.  (We
+	 * don't worry about the additive constants, since palloc can detect
+	 * requests that are a little above MaxAllocSize --- we just need to
+	 * prevent integer overflow in the multiplications.)
+	 */
+	if ((Size) (slen / 2) >= (MaxAllocSize / (sizeof(trgm) * 3)) ||
+		(Size) slen >= (MaxAllocSize / pg_database_encoding_max_length()))
+		ereport(ERROR,
+				(errcode(ERRCODE_PROGRAM_LIMIT_EXCEEDED),
+				 errmsg("out of memory")));
 }
 
 TRGM *
@@ -247,7 +245,12 @@ generate_trgm(char *str, int slen)
 	TRGM	   *trg;
 	int			len;
 
-	trg = generate_trgm_only(str, slen, &len);
+
+	trg = (TRGM *) palloc(TRGMHDRSIZE + sizeof(trgm) * (slen / 2 + 1) *3);
+	trg->flag = ARRKEY;
+
+	len = generate_trgm_only(GETARR(trg), str, slen);
+	SET_VARSIZE(trg, CALCGTSIZE(ARRKEY, len));
 
 	if (len == 0)
 		return trg;
@@ -266,20 +269,209 @@ generate_trgm(char *str, int slen)
 	return trg;
 }
 
-TRGM *
-generate_simple_trgm(char *str, int slen, int sort)
+typedef struct
 {
-	TRGM	   *trg;
-	int			len;
+	trgm	t;
+	int		i;
+} ptrgm;
 
-	trg = generate_trgm_only(str, slen, &len);
-	SET_VARSIZE(trg, CALCGTSIZE(ARRKEY, len));
+static ptrgm *
+make_positional_trgm(trgm *trg1, int len1, trgm *trg2, int len2)
+{
+	ptrgm *result;
+	int i, len = len1 + len2;
 
-	if (len > 1 && sort)
-		qsort((void *) GETARR(trg), len, sizeof(trgm), comp_trgm);
+	result = (ptrgm *) palloc(sizeof(ptrgm) * len);
 
-	return trg;
+	for (i = 0; i < len1; i++)
+	{
+		memcpy(&result[i].t, &trg1[i], sizeof(trgm));
+		result[i].i = -1;
+	}
+
+	for (i = 0; i < len2; i++)
+	{
+		memcpy(&result[i + len1].t, &trg2[i], sizeof(trgm));
+		result[i + len1].i = i;
+	}
+
+	return result;
 }
+
+static int
+comp_ptrgm(const void *v1, const void *v2)
+{
+	const ptrgm	   *p1 = (const ptrgm *)v1;
+	const ptrgm	   *p2 = (const ptrgm *)v2;
+	int				cmp;
+
+	cmp = CMPTRGM(p1->t, p2->t);
+	if (cmp != 0)
+		return cmp;
+
+	if (p1->i < p2->i)
+		return -1;
+	else if (p1->i == p2->i)
+		return 0;
+	else
+		return 1;
+}
+
+static float4
+iterate_substring_similarity(int *trg2indexes, bool *found, int ulen1, int len2, int len)
+{
+	int		   *lastpos,
+				i,
+				ulen2 = 0,
+				count = 0,
+				upper = -1,
+				lower = -1;
+	float4		smlr_cur,
+				smlr_max = 0.0f;
+
+	lastpos = (int *) palloc(sizeof(int) * len);
+	memset(lastpos, -1, sizeof(int) * len);
+
+	for (i = 0; i < len2; i++)
+	{
+		int trgindex = trg2indexes[i];
+
+		if (lastpos[trgindex] < 0)
+		{
+			ulen2++;
+			if (found[trgindex])
+				count++;
+		}
+		lastpos[trgindex] = i;
+
+		/*elog(NOTICE, "%d %d %d", i, trgindex, found[trgindex]);*/
+
+		if (found[trgindex])
+		{
+			int		prev_lower,
+					tmp_ulen2,
+					tmp_lower,
+					tmp_count;
+
+			upper = i;
+			if (lower == -1)
+			{
+				lower = i;
+				ulen2 = 1;
+			}
+
+			smlr_cur = CALCSML(count, ulen1, ulen2);
+			/*elog(NOTICE, "%d %d %d %d %d %f", lower, upper, count, ulen1, ulen2, smlr_cur);*/
+
+			tmp_count = count;
+			tmp_ulen2 = ulen2;
+			prev_lower = lower;
+			for (tmp_lower = lower; tmp_lower <= upper; tmp_lower++)
+			{
+				float	smlr_tmp = CALCSML(tmp_count, ulen1, tmp_ulen2);
+				int		tmp_trgindex;
+
+				if (smlr_tmp > smlr_cur)
+				{
+					smlr_cur = smlr_tmp;
+					ulen2 = tmp_ulen2;
+					lower = tmp_lower;
+					count = tmp_count;
+				}
+				tmp_trgindex = trg2indexes[tmp_lower];
+				/*elog(NOTICE, "t %d %d", tmp_lower, lastpos[tmp_trgindex]);*/
+				if (lastpos[tmp_trgindex] == tmp_lower)
+				{
+					tmp_ulen2--;
+					if (found[tmp_trgindex])
+						tmp_count--;
+				}
+			}
+
+			for (tmp_lower = prev_lower; tmp_lower < lower; tmp_lower++)
+			{
+				int		tmp_trgindex;
+				tmp_trgindex = trg2indexes[tmp_lower];
+				if (lastpos[tmp_trgindex] == tmp_lower)
+					lastpos[tmp_trgindex] = -1;
+			}
+
+			/*elog(NOTICE, "%d %d %d %d %d %f", lower, upper, count, ulen1, ulen2, smlr_cur);*/
+
+			smlr_max = Max(smlr_max, smlr_cur);
+		}
+	}
+
+	pfree(lastpos);
+
+	return smlr_max;
+}
+
+
+static float4
+calc_substring_similarity(char *str1, int slen1, char *str2, int slen2)
+{
+	bool *found;
+	ptrgm *ptrg;
+	trgm *trg1;
+	trgm *trg2;
+	int len1, len2, len, i, j, ulen1;
+	int *trg2indexes;
+	float4	result;
+
+	protect_out_of_mem(slen1 + slen2);
+
+	trg1 = (trgm *) palloc(sizeof(trgm) * (slen1 / 2 + 1) * 3);
+	trg2 = (trgm *) palloc(sizeof(trgm) * (slen2 / 2 + 1) * 3);
+
+	len1 = generate_trgm_only(trg1, str1, slen1);
+	len2 = generate_trgm_only(trg2, str2, slen2);
+
+	ptrg = make_positional_trgm(trg1, len1, trg2, len2);
+	len = len1 + len2;
+	qsort(ptrg, len, sizeof(ptrgm), comp_ptrgm);
+
+	pfree(trg1);
+	pfree(trg2);
+
+	trg2indexes = (int *) palloc(sizeof(int) * len2);
+	found = (bool *) palloc0(sizeof(bool) * len);
+
+	ulen1 = 0;
+	j = 0;
+	for (i = 0; i < len; i++)
+	{
+		if (i > 0)
+		{
+			int cmp = CMPTRGM(ptrg[i - 1].t, ptrg[i].t);
+			if (cmp != 0)
+			{
+				if (found[j])
+					ulen1++;
+				j++;
+			}
+		}
+
+		if (ptrg[i].i >= 0)
+		{
+			trg2indexes[ptrg[i].i] = j;
+		}
+		else
+		{
+			found[j] = true;
+		}
+	}
+	if (found[j])
+		ulen1++;
+
+	result = iterate_substring_similarity(trg2indexes, found, ulen1, len2, len);
+
+	pfree(trg2indexes);
+	pfree(found);
+
+	return result;
+}
+
 
 /*
  * Extract the next non-wildcard part of a search string, ie, a word bounded
@@ -617,119 +809,6 @@ cnt_sml(TRGM *trg1, TRGM *trg2)
 	return CALCSML(count, len1, len2);
 }
 
-/*
- * Binary search for trigrams
- */
-static trgm *
-bsearch_trgm(trgm *key, trgm *base, const bool *baseentry, size_t num)
-{
-	size_t		start = 0,
-				end = num;
-	int			result;
-
-	while (start < end)
-	{
-		size_t mid = start + (end - start) / 2;
-
-		result = comp_trgm(key, base + mid);
- 		if (result < 0)
-			end = mid;
-		else if (result > 0)
-			start = mid + 1;
-		else if (baseentry[mid])
-		{
-			void *res = bsearch_trgm(key, base, baseentry, mid);
-			if (res)
-				return res;
-			else
-				return bsearch_trgm(key, base + (mid + 1), baseentry, num - mid);
-		}
-		else
-			return base + mid;
-	}
-
-	return NULL;
- }
-
-float4
-cnt_substring_sml(TRGM *trg1, TRGM *trg2)
-{
-	trgm	   *ptr1,
-			   *ptr2;
-	int			len1,
-				len2;
-	int			count = 0,
-				len_cur,
-				lower = -1,
-				upper = -1;
-	float4		cnt_max = (float4) 0.0,
-				cnt_cur;
-	int			i;
-	bool	   *trg1entry,
-			   *trg2entry;
-
-	ptr1 = GETARR(trg1);
-	ptr2 = GETARR(trg2);
-
-	len1 = ARRNELEM(trg1);
-	len2 = ARRNELEM(trg2);
-
-	if (len1 <= 0 || len2 <= 0)
-		PG_RETURN_FLOAT4((float4) 0.0);
-
-	trg1entry = (bool *) palloc(sizeof(bool) * len1);
-	memset(trg1entry, false, len1);
-	trg2entry = (bool *) palloc(sizeof(bool) * len2);
-
-	for (i = 0; i < len2; i++)
-	{
-		trgm   *found = bsearch_trgm(ptr2, ptr1, trg1entry, len1);
-		if (found)
-		{
-			int foundindex = found - ptr1;
-			trg2entry[i] = true;
-
-			if (!trg1entry[foundindex])
-			{
-				count++;
-				trg1entry[foundindex] = true;
-			}
-
-			if (lower == -1)
-				lower = i;
-			upper = i;
-		}
-		else
-			trg2entry[i] = false;
-
-		ptr2++;
-	}
-
-	if (lower > -1)
-	{
-		int count_lower = count;
-		for (i = lower; i <= upper; i++)
-		{
-			if (trg2entry[i])
-			{
-				len_cur = upper - i + 1;
-				cnt_cur = CALCSML(count_lower, len1, len_cur);
-
-				if (cnt_cur > cnt_max)
-				{
-					cnt_max = cnt_cur;
-					count = count_lower;
-				}
-				count_lower--;
-			}
-		}
-	}
-
-	pfree(trg1entry);
-	pfree(trg2entry);
-
-	return cnt_max;
-}
 
 /*
  * Returns whether trg2 contains all trigrams in trg1.
@@ -838,19 +917,13 @@ similarity(PG_FUNCTION_ARGS)
 Datum
 substring_similarity(PG_FUNCTION_ARGS)
 {
-	text	   *in1 = PG_GETARG_TEXT_P(0);
-	text	   *in2 = PG_GETARG_TEXT_P(1);
-	TRGM	   *trg1,
-			   *trg2;
+	text	   *in1 = PG_GETARG_TEXT_PP(0);
+	text	   *in2 = PG_GETARG_TEXT_PP(1);
 	float4		res;
 
-	trg1 = generate_simple_trgm(VARDATA(in1), VARSIZE(in1) - VARHDRSZ, 1);
-	trg2 = generate_simple_trgm(VARDATA(in2), VARSIZE(in2) - VARHDRSZ, 0);
+	res = calc_substring_similarity(VARDATA_ANY(in1), VARSIZE_ANY_EXHDR(in1),
+									VARDATA_ANY(in2), VARSIZE_ANY_EXHDR(in2));
 
-	res = cnt_substring_sml(trg1, trg2);
-
-	pfree(trg1);
-	pfree(trg2);
 	PG_FREE_IF_COPY(in1, 0);
 	PG_FREE_IF_COPY(in2, 1);
 
