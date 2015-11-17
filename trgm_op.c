@@ -463,6 +463,7 @@ calc_substring_similarity(char *str1, int slen1, char *str2, int slen2)
 
 	pfree(trg2indexes);
 	pfree(found);
+	pfree(ptrg);
 
 	return result;
 }
@@ -784,6 +785,10 @@ cnt_sml(TRGM *trg1, TRGM *trg2)
 
 	len1 = ARRNELEM(trg1);
 	len2 = ARRNELEM(trg2);
+
+	/* explicit test is needed to avoid 0/0 division when both lengths are 0 */
+	if (len1 <= 0 || len2 <= 0)
+		return (float4) 0.0;
 
 	while (ptr1 - GETARR(trg1) < len1 && ptr2 - GETARR(trg2) < len2)
 	{

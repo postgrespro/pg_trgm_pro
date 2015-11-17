@@ -915,10 +915,18 @@ transformGraph(TrgmNFA *trgmNFA)
 	hashCtl.keysize = sizeof(TrgmStateKey);
 	hashCtl.entrysize = sizeof(TrgmState);
 	hashCtl.hcxt = CurrentMemoryContext;
-	trgmNFA->states = hash_create("Trigram NFA",
-								  1024,
-								  &hashCtl,
-								  HASH_ELEM | HASH_BLOBS | HASH_CONTEXT);
+
+	#if PG_VERSION_NUM >= 90500
+		trgmNFA->states = hash_create("Trigram NFA",
+									  1024,
+									  &hashCtl,
+									  HASH_ELEM | HASH_BLOBS | HASH_CONTEXT);
+	#else
+		trgmNFA->states = hash_create("Trigram NFA",
+									  1024,
+									  &hashCtl,
+									  HASH_ELEM | HASH_CONTEXT | HASH_FUNCTION);
+	#endif
 
 	/* Create initial state: ambiguous prefix, NFA's initial state */
 	MemSet(&initkey, 0, sizeof(initkey));

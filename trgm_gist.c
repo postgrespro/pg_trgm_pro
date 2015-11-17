@@ -5,9 +5,12 @@
 
 #include "trgm.h"
 
-#include "access/stratnum.h"
 #include "fmgr.h"
-
+#if PG_VERSION_NUM >= 90500
+	#include "access/stratnum.h"
+#else
+	#include "access/skey.h"
+#endif
 
 typedef struct
 {
