@@ -118,7 +118,6 @@ extern void compact_trigram(trgm *tptr, char *str, int bytelen);
 extern TRGM *generate_trgm(char *str, int slen);
 extern TRGM *generate_wildcard_trgm(const char *str, int slen);
 extern float4 cnt_sml(TRGM *trg1, TRGM *trg2);
-extern float4 cnt_substring_sml(TRGM *trg1, TRGM *trg2);
 extern bool trgm_contained_by(TRGM *trg1, TRGM *trg2);
 extern bool *trgm_presence_map(TRGM *query, TRGM *key);
 extern TRGM *createTrgmNFA(text *text_re, Oid collation,

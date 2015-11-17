@@ -23,11 +23,6 @@ RETURNS float4
 AS 'MODULE_PATHNAME'
 LANGUAGE C STRICT IMMUTABLE;
 
-CREATE FUNCTION substring_similarity(text,text)
-RETURNS float4
-AS 'MODULE_PATHNAME'
-LANGUAGE C STRICT IMMUTABLE;
-
 CREATE FUNCTION similarity_op(text,text)
 RETURNS bool
 AS 'MODULE_PATHNAME'
@@ -38,6 +33,25 @@ CREATE OPERATOR % (
         RIGHTARG = text,
         PROCEDURE = similarity_op,
         COMMUTATOR = '%',
+        RESTRICT = contsel,
+        JOIN = contjoinsel
+);
+
+CREATE FUNCTION substring_similarity(text,text)
+RETURNS float4
+AS 'MODULE_PATHNAME'
+LANGUAGE C STRICT IMMUTABLE;
+
+CREATE FUNCTION substring_similarity_op(text,text)
+RETURNS bool
+AS 'MODULE_PATHNAME'
+LANGUAGE C STRICT STABLE;  -- stable because depends on trgm_limit
+
+CREATE OPERATOR <% (
+        LEFTARG = text,
+        RIGHTARG = text,
+        PROCEDURE = substring_similarity_op,
+        COMMUTATOR = '<%',
         RESTRICT = contsel,
         JOIN = contjoinsel
 );

@@ -23,6 +23,7 @@ PG_FUNCTION_INFO_V1(similarity);
 PG_FUNCTION_INFO_V1(substring_similarity);
 PG_FUNCTION_INFO_V1(similarity_dist);
 PG_FUNCTION_INFO_V1(similarity_op);
+PG_FUNCTION_INFO_V1(substring_similarity_op);
 
 
 Datum
@@ -344,8 +345,6 @@ iterate_substring_similarity(int *trg2indexes, bool *found, int ulen1, int len2,
 		}
 		lastpos[trgindex] = i;
 
-		/*elog(NOTICE, "%d %d %d", i, trgindex, found[trgindex]);*/
-
 		if (found[trgindex])
 		{
 			int		prev_lower,
@@ -361,7 +360,6 @@ iterate_substring_similarity(int *trg2indexes, bool *found, int ulen1, int len2,
 			}
 
 			smlr_cur = CALCSML(count, ulen1, ulen2);
-			/*elog(NOTICE, "%d %d %d %d %d %f", lower, upper, count, ulen1, ulen2, smlr_cur);*/
 
 			tmp_count = count;
 			tmp_ulen2 = ulen2;
@@ -379,7 +377,6 @@ iterate_substring_similarity(int *trg2indexes, bool *found, int ulen1, int len2,
 					count = tmp_count;
 				}
 				tmp_trgindex = trg2indexes[tmp_lower];
-				/*elog(NOTICE, "t %d %d", tmp_lower, lastpos[tmp_trgindex]);*/
 				if (lastpos[tmp_trgindex] == tmp_lower)
 				{
 					tmp_ulen2--;
@@ -395,8 +392,6 @@ iterate_substring_similarity(int *trg2indexes, bool *found, int ulen1, int len2,
 				if (lastpos[tmp_trgindex] == tmp_lower)
 					lastpos[tmp_trgindex] = -1;
 			}
-
-			/*elog(NOTICE, "%d %d %d %d %d %f", lower, upper, count, ulen1, ulen2, smlr_cur);*/
 
 			smlr_max = Max(smlr_max, smlr_cur);
 		}
@@ -944,6 +939,16 @@ Datum
 similarity_op(PG_FUNCTION_ARGS)
 {
 	float4		res = DatumGetFloat4(DirectFunctionCall2(similarity,
+														 PG_GETARG_DATUM(0),
+														 PG_GETARG_DATUM(1)));
+
+	PG_RETURN_BOOL(res >= trgm_limit);
+}
+
+Datum
+substring_similarity_op(PG_FUNCTION_ARGS)
+{
+	float4		res = DatumGetFloat4(DirectFunctionCall2(substring_similarity,
 														 PG_GETARG_DATUM(0),
 														 PG_GETARG_DATUM(1)));
 
