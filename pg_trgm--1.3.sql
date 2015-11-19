@@ -157,6 +157,11 @@ ALTER OPERATOR FAMILY gist_trgm_ops USING gist ADD
         OPERATOR        5       pg_catalog.~ (text, text),
         OPERATOR        6       pg_catalog.~* (text, text);
 
+-- Add operators that are new in 9.6 (pg_trgm 1.3).
+
+ALTER OPERATOR FAMILY gist_trgm_ops USING gist ADD
+        OPERATOR        7       <% (text, text);
+
 -- support functions for gin
 CREATE FUNCTION gin_extract_value_trgm(text, internal)
 RETURNS internal
@@ -205,3 +210,8 @@ LANGUAGE C IMMUTABLE STRICT;
 
 ALTER OPERATOR FAMILY gin_trgm_ops USING gin ADD
         FUNCTION        6      (text,text) gin_trgm_triconsistent (internal, int2, text, int4, internal, internal, internal);
+
+-- Add operators that are new in 9.6 (pg_trgm 1.3).
+
+ALTER OPERATOR FAMILY gin_trgm_ops USING gin ADD
+        OPERATOR        7       <% (text, text);

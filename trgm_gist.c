@@ -221,6 +221,7 @@ gtrgm_consistent(PG_FUNCTION_ARGS)
 		switch (strategy)
 		{
 			case SimilarityStrategyNumber:
+			case SubstringSimilarityStrategyNumber:
 				qtrg = generate_trgm(VARDATA(query),
 									 querysize - VARHDRSZ);
 				break;
@@ -289,12 +290,13 @@ gtrgm_consistent(PG_FUNCTION_ARGS)
 	switch (strategy)
 	{
 		case SimilarityStrategyNumber:
-			/* Similarity search is exact */
-			*recheck = false;
+		case SubstringSimilarityStrategyNumber:
+			/* Similarity search is exact. Substring similarity search is inexact */
+			*recheck = (strategy == SubstringSimilarityStrategyNumber) ? true : false;
 
 			if (GIST_LEAF(entry))
 			{					/* all leafs contains orig trgm */
-				float4		tmpsml = cnt_sml(key, qtrg);
+				float4		tmpsml = cnt_sml(qtrg, key, *recheck);
 
 				/* strange bug at freebsd 5.2.1 and gcc 3.3.3 */
 				res = (*(int *) &tmpsml == *(int *) &trgm_limit || tmpsml > trgm_limit) ? true : false;
@@ -466,7 +468,7 @@ gtrgm_distance(PG_FUNCTION_ARGS)
 		case DistanceStrategyNumber:
 			if (GIST_LEAF(entry))
 			{					/* all leafs contains orig trgm */
-				res = 1.0 - cnt_sml(key, qtrg);
+				res = 1.0 - cnt_sml(key, qtrg, false);
 			}
 			else if (ISALLTRUE(key))
 			{					/* all leafs contains orig trgm */

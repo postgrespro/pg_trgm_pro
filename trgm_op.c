@@ -772,7 +772,7 @@ show_trgm(PG_FUNCTION_ARGS)
 }
 
 float4
-cnt_sml(TRGM *trg1, TRGM *trg2)
+cnt_sml(TRGM *trg1, TRGM *trg2, bool inexact)
 {
 	trgm	   *ptr1,
 			   *ptr2;
@@ -806,7 +806,13 @@ cnt_sml(TRGM *trg1, TRGM *trg2)
 		}
 	}
 
-	return CALCSML(count, len1, len2);
+	/* if inexact then len2 is equal to count */
+	if (inexact)
+	{
+		return CALCSML(count, len1, count);
+	}
+	else
+		return CALCSML(count, len1, len2);
 }
 
 
@@ -904,7 +910,7 @@ similarity(PG_FUNCTION_ARGS)
 	trg1 = generate_trgm(VARDATA(in1), VARSIZE(in1) - VARHDRSZ);
 	trg2 = generate_trgm(VARDATA(in2), VARSIZE(in2) - VARHDRSZ);
 
-	res = cnt_sml(trg1, trg2);
+	res = cnt_sml(trg1, trg2, false);
 
 	pfree(trg1);
 	pfree(trg2);

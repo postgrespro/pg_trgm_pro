@@ -21,3 +21,9 @@ CREATE OPERATOR <% (
         RESTRICT = contsel,
         JOIN = contjoinsel
 );
+
+ALTER OPERATOR FAMILY gist_trgm_ops USING gist ADD
+        OPERATOR        7       <% (text, text);
+
+ALTER OPERATOR FAMILY gin_trgm_ops USING gin ADD
+        OPERATOR        7       <% (text, text);

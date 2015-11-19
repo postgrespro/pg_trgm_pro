@@ -92,6 +92,7 @@ gin_extract_query_trgm(PG_FUNCTION_ARGS)
 	switch (strategy)
 	{
 		case SimilarityStrategyNumber:
+		case SubstringSimilarityStrategyNumber:
 			trg = generate_trgm(VARDATA(val), VARSIZE(val) - VARHDRSZ);
 			break;
 		case ILikeStrategyNumber:
@@ -186,6 +187,7 @@ gin_trgm_consistent(PG_FUNCTION_ARGS)
 	switch (strategy)
 	{
 		case SimilarityStrategyNumber:
+		case SubstringSimilarityStrategyNumber:
 			/* Count the matches */
 			ntrue = 0;
 			for (i = 0; i < nkeys; i++)
@@ -263,6 +265,7 @@ gin_trgm_triconsistent(PG_FUNCTION_ARGS)
 	switch (strategy)
 	{
 		case SimilarityStrategyNumber:
+		case SubstringSimilarityStrategyNumber:
 			/* Count the matches */
 			ntrue = 0;
 			for (i = 0; i < nkeys; i++)
