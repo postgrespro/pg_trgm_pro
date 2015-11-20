@@ -8,9 +8,12 @@
 #include "access/gin.h"
 #include "fmgr.h"
 #if PG_VERSION_NUM >= 90500
-	#include "access/stratnum.h"
+/*
+ * We have to include skey.h in pre-9.5 to use StrategyNumber type
+ */
+#include "access/stratnum.h"
 #else
-	#include "access/skey.h"
+#include "access/skey.h"
 #endif
 
 PG_FUNCTION_INFO_V1(gin_extract_trgm);

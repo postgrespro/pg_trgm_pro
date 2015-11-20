@@ -922,6 +922,8 @@ transformGraph(TrgmNFA *trgmNFA)
 									  &hashCtl,
 									  HASH_ELEM | HASH_BLOBS | HASH_CONTEXT);
 	#else
+		/* pre-9.5 supporting */
+		hashCtl.hash = tag_hash;
 		trgmNFA->states = hash_create("Trigram NFA",
 									  1024,
 									  &hashCtl,
