@@ -280,12 +280,19 @@ generate_trgm(char *str, int slen)
 	return trg;
 }
 
+/* Trigram with position */
 typedef struct
 {
 	trgm	t;
 	int		i;
 } ptrgm;
 
+/*
+ * Make array of positional trigrams from two trigram arrays. The first array
+ * is required substing which positions don't matter and replaced with -1.
+ * The second array is haystack where we search and have to store its
+ * positions.
+ */
 static ptrgm *
 make_positional_trgm(trgm *trg1, int len1, trgm *trg2, int len2)
 {
@@ -309,6 +316,9 @@ make_positional_trgm(trgm *trg1, int len1, trgm *trg2, int len2)
 	return result;
 }
 
+/*
+ * Compare position trigrams: compare trigrams first and position second.
+ */
 static int
 comp_ptrgm(const void *v1, const void *v2)
 {
@@ -328,8 +338,15 @@ comp_ptrgm(const void *v1, const void *v2)
 		return 1;
 }
 
+/*
+ * Iterative procedure if finding maximum similarity with substring.
+ */
 static float4
-iterate_substring_similarity(int *trg2indexes, bool *found, int ulen1, int len2, int len)
+iterate_substring_similarity(int *trg2indexes,
+							 bool *found,
+							 int ulen1,
+							 int len2,
+							 int len)
 {
 	int		   *lastpos,
 				i,
@@ -340,13 +357,16 @@ iterate_substring_similarity(int *trg2indexes, bool *found, int ulen1, int len2,
 	float4		smlr_cur,
 				smlr_max = 0.0f;
 
+	/* Memorise last position of each trigram */
 	lastpos = (int *) palloc(sizeof(int) * len);
 	memset(lastpos, -1, sizeof(int) * len);
 
 	for (i = 0; i < len2; i++)
 	{
-		int trgindex = trg2indexes[i];
+		/* Get index of next trigram */
+		int	trgindex = trg2indexes[i];
 
+		/* Update last position of this trigram */
 		if (lastpos[trgindex] < 0)
 		{
 			ulen2++;
@@ -355,6 +375,7 @@ iterate_substring_similarity(int *trg2indexes, bool *found, int ulen1, int len2,
 		}
 		lastpos[trgindex] = i;
 
+		/* Adjust lower bound if this trigram is present in required substing */
 		if (found[trgindex])
 		{
 			int		prev_lower,
@@ -371,6 +392,7 @@ iterate_substring_similarity(int *trg2indexes, bool *found, int ulen1, int len2,
 
 			smlr_cur = CALCSML(count, ulen1, ulen2);
 
+			/* Also try to adjust upper bound for greater similarity */
 			tmp_count = count;
 			tmp_ulen2 = ulen2;
 			prev_lower = lower;
@@ -412,20 +434,28 @@ iterate_substring_similarity(int *trg2indexes, bool *found, int ulen1, int len2,
 	return smlr_max;
 }
 
-
+/*
+ * Calculate substring similarity.
+ */
 static float4
 calc_substring_similarity(char *str1, int slen1, char *str2, int slen2)
 {
-	bool *found;
-	ptrgm *ptrg;
-	trgm *trg1;
-	trgm *trg2;
-	int len1, len2, len, i, j, ulen1;
-	int *trg2indexes;
+	bool   *found;
+	ptrgm  *ptrg;
+	trgm   *trg1;
+	trgm   *trg2;
+	int		len1,
+			len2,
+			len,
+			i,
+			j,
+			ulen1;
+	int	   *trg2indexes;
 	float4	result;
 
 	protect_out_of_mem(slen1 + slen2);
 
+	/* Make positional trigrams */
 	trg1 = (trgm *) palloc(sizeof(trgm) * (slen1 / 2 + 1) * 3);
 	trg2 = (trgm *) palloc(sizeof(trgm) * (slen2 / 2 + 1) * 3);
 
@@ -439,6 +469,10 @@ calc_substring_similarity(char *str1, int slen1, char *str2, int slen2)
 	pfree(trg1);
 	pfree(trg2);
 
+	/*
+	 * Merge positional trigrams array: enumerate each trigram and find its
+	 * presence in required substring.
+	 */
 	trg2indexes = (int *) palloc(sizeof(int) * len2);
 	found = (bool *) palloc0(sizeof(bool) * len);
 
@@ -469,6 +503,7 @@ calc_substring_similarity(char *str1, int slen1, char *str2, int slen2)
 	if (found[j])
 		ulen1++;
 
+	/* Run iterative procedure to find maximum similarity with substring */
 	result = iterate_substring_similarity(trg2indexes, found, ulen1, len2, len);
 
 	pfree(trg2indexes);
