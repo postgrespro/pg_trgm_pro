@@ -339,6 +339,23 @@ comp_ptrgm(const void *v1, const void *v2)
 		return 1;
 }
 
+#ifdef NOT_USED
+static void
+print_array(int *arr, int len)
+{
+	int i;
+	StringInfoData str;
+
+	initStringInfo(&str);
+
+	for (i = 0; i < len; i++)
+	{
+		appendStringInfo(&str, "%d ", arr[i]);
+	}
+	elog(NOTICE, "%s", str.data);
+}
+#endif
+
 /*
  * Iterative procedure if finding maximum similarity with substring.
  */
@@ -368,13 +385,16 @@ iterate_substring_similarity(int *trg2indexes,
 		int	trgindex = trg2indexes[i];
 
 		/* Update last position of this trigram */
-		if (lastpos[trgindex] < 0)
+		if (lower >= 0 || found[trgindex])
 		{
-			ulen2++;
-			if (found[trgindex])
-				count++;
+			if (lastpos[trgindex] < 0)
+			{
+				ulen2++;
+				if (found[trgindex])
+					count++;
+			}
+			lastpos[trgindex] = i;
 		}
-		lastpos[trgindex] = i;
 
 		/* Adjust lower bound if this trigram is present in required substing */
 		if (found[trgindex])

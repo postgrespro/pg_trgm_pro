@@ -52,20 +52,20 @@ RETURNS bool
 AS 'MODULE_PATHNAME'
 LANGUAGE C STRICT STABLE;  -- stable because depends on trgm_limit
 
-CREATE OPERATOR %> (
+CREATE OPERATOR <% (
         LEFTARG = text,
         RIGHTARG = text,
         PROCEDURE = substring_similarity_op,
-        COMMUTATOR = '<%',
+        COMMUTATOR = '%>',
         RESTRICT = contsel,
         JOIN = contjoinsel
 );
 
-CREATE OPERATOR <% (
+CREATE OPERATOR %> (
         LEFTARG = text,
         RIGHTARG = text,
         PROCEDURE = substring_similarity_commutator_op,
-        COMMUTATOR = '%>',
+        COMMUTATOR = '<%',
         RESTRICT = contsel,
         JOIN = contjoinsel
 );
