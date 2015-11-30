@@ -47,11 +47,25 @@ RETURNS bool
 AS 'MODULE_PATHNAME'
 LANGUAGE C STRICT STABLE;  -- stable because depends on trgm_limit
 
-CREATE OPERATOR <% (
+CREATE FUNCTION substring_similarity_commutator_op(text,text)
+RETURNS bool
+AS 'MODULE_PATHNAME'
+LANGUAGE C STRICT STABLE;  -- stable because depends on trgm_limit
+
+CREATE OPERATOR %> (
         LEFTARG = text,
         RIGHTARG = text,
         PROCEDURE = substring_similarity_op,
         COMMUTATOR = '<%',
+        RESTRICT = contsel,
+        JOIN = contjoinsel
+);
+
+CREATE OPERATOR <% (
+        LEFTARG = text,
+        RIGHTARG = text,
+        PROCEDURE = substring_similarity_commutator_op,
+        COMMUTATOR = '%>',
         RESTRICT = contsel,
         JOIN = contjoinsel
 );
@@ -160,7 +174,7 @@ ALTER OPERATOR FAMILY gist_trgm_ops USING gist ADD
 -- Add operators that are new in 9.6 (pg_trgm 1.3).
 
 ALTER OPERATOR FAMILY gist_trgm_ops USING gist ADD
-        OPERATOR        7       <% (text, text);
+        OPERATOR        7       %> (text, text);
 
 -- support functions for gin
 CREATE FUNCTION gin_extract_value_trgm(text, internal)
@@ -214,4 +228,4 @@ ALTER OPERATOR FAMILY gin_trgm_ops USING gin ADD
 -- Add operators that are new in 9.6 (pg_trgm 1.3).
 
 ALTER OPERATOR FAMILY gin_trgm_ops USING gin ADD
-        OPERATOR        7       <% (text, text);
+        OPERATOR        7       %> (text, text);
