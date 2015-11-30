@@ -51,7 +51,6 @@ CREATE OPERATOR <% (
         LEFTARG = text,
         RIGHTARG = text,
         PROCEDURE = substring_similarity_op,
-        COMMUTATOR = '<%',
         RESTRICT = contsel,
         JOIN = contjoinsel
 );
