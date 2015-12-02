@@ -197,6 +197,7 @@ gtrgm_consistent(PG_FUNCTION_ARGS)
 	bool		res;
 	Size		querysize = VARSIZE(query);
 	gtrgm_consistent_cache *cache;
+	float4		nlimit;
 
 	/*
 	 * We keep the extracted trigrams in cache, because trigram extraction is
@@ -296,13 +297,14 @@ gtrgm_consistent(PG_FUNCTION_ARGS)
 		case SubstringSimilarityStrategyNumber:
 			/* Similarity search is exact. Substring similarity search is inexact */
 			*recheck = (strategy == SubstringSimilarityStrategyNumber) ? true : false;
+			nlimit = (strategy == SimilarityStrategyNumber) ? trgm_limit : trgm_substring_limit;
 
 			if (GIST_LEAF(entry))
 			{					/* all leafs contains orig trgm */
 				float4		tmpsml = cnt_sml(qtrg, key, *recheck);
 
 				/* strange bug at freebsd 5.2.1 and gcc 3.3.3 */
-				res = (*(int *) &tmpsml == *(int *) &trgm_limit || tmpsml > trgm_limit) ? true : false;
+				res = (*(int *) &tmpsml == *(int *) &nlimit || tmpsml > nlimit) ? true : false;
 			}
 			else if (ISALLTRUE(key))
 			{					/* non-leaf contains signature */
@@ -316,7 +318,7 @@ gtrgm_consistent(PG_FUNCTION_ARGS)
 				if (len == 0)
 					res = false;
 				else
-					res = (((((float8) count) / ((float8) len))) >= trgm_limit) ? true : false;
+					res = (((((float8) count) / ((float8) len))) >= nlimit) ? true : false;
 			}
 			break;
 		case ILikeStrategyNumber:

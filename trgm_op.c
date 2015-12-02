@@ -25,6 +25,7 @@
 PG_MODULE_MAGIC;
 
 float4		trgm_limit = 0.3f;
+float4		trgm_substring_limit = 0.6f;
 
 PG_FUNCTION_INFO_V1(set_limit);
 PG_FUNCTION_INFO_V1(show_limit);
@@ -33,6 +34,8 @@ PG_FUNCTION_INFO_V1(similarity);
 PG_FUNCTION_INFO_V1(substring_similarity);
 PG_FUNCTION_INFO_V1(similarity_dist);
 PG_FUNCTION_INFO_V1(similarity_op);
+PG_FUNCTION_INFO_V1(set_substring_limit);
+PG_FUNCTION_INFO_V1(show_substring_limit);
 PG_FUNCTION_INFO_V1(substring_similarity_op);
 PG_FUNCTION_INFO_V1(substring_similarity_commutator_op);
 
@@ -52,6 +55,23 @@ Datum
 show_limit(PG_FUNCTION_ARGS)
 {
 	PG_RETURN_FLOAT4(trgm_limit);
+}
+
+Datum
+set_substring_limit(PG_FUNCTION_ARGS)
+{
+	float4		nlimit = PG_GETARG_FLOAT4(0);
+
+	if (nlimit < 0 || nlimit > 1.0)
+		elog(ERROR, "wrong limit, should be between 0 and 1");
+	trgm_substring_limit = nlimit;
+	PG_RETURN_FLOAT4(trgm_substring_limit);
+}
+
+Datum
+show_substring_limit(PG_FUNCTION_ARGS)
+{
+	PG_RETURN_FLOAT4(trgm_substring_limit);
 }
 
 static int
@@ -1029,7 +1049,7 @@ substring_similarity_op(PG_FUNCTION_ARGS)
 														 PG_GETARG_DATUM(0),
 														 PG_GETARG_DATUM(1)));
 
-	PG_RETURN_BOOL(res >= trgm_limit);
+	PG_RETURN_BOOL(res >= trgm_substring_limit);
 }
 
 Datum
@@ -1039,5 +1059,5 @@ substring_similarity_commutator_op(PG_FUNCTION_ARGS)
 														 PG_GETARG_DATUM(1),
 														 PG_GETARG_DATUM(0)));
 
-	PG_RETURN_BOOL(res >= trgm_limit);
+	PG_RETURN_BOOL(res >= trgm_substring_limit);
 }

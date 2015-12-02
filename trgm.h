@@ -113,6 +113,7 @@ typedef char *BITVECP;
 typedef struct TrgmPackedGraph TrgmPackedGraph;
 
 extern float4 trgm_limit;
+extern float4 trgm_substring_limit;
 
 extern uint32 trgm2int(trgm *ptr);
 extern void compact_trigram(trgm *tptr, char *str, int bytelen);

@@ -183,6 +183,7 @@ gin_trgm_consistent(PG_FUNCTION_ARGS)
 	bool		res;
 	int32		i,
 				ntrue;
+	float4		nlimit;
 
 	/* All cases served by this function are inexact */
 	*recheck = true;
@@ -198,10 +199,11 @@ gin_trgm_consistent(PG_FUNCTION_ARGS)
 				if (check[i])
 					ntrue++;
 			}
+			nlimit = (strategy == SimilarityStrategyNumber) ? trgm_limit : trgm_substring_limit;
 #ifdef DIVUNION
-			res = (nkeys == ntrue) ? true : ((((((float4) ntrue) / ((float4) (nkeys - ntrue)))) >= trgm_limit) ? true : false);
+			res = (nkeys == ntrue) ? true : ((((((float4) ntrue) / ((float4) (nkeys - ntrue)))) >= nlimit) ? true : false);
 #else
-			res = (nkeys == 0) ? false : ((((((float4) ntrue) / ((float4) nkeys))) >= trgm_limit) ? true : false);
+			res = (nkeys == 0) ? false : ((((((float4) ntrue) / ((float4) nkeys))) >= nlimit) ? true : false);
 #endif
 			break;
 		case ILikeStrategyNumber:
@@ -264,6 +266,7 @@ gin_trgm_triconsistent(PG_FUNCTION_ARGS)
 	int32		i,
 				ntrue;
 	bool	   *boolcheck;
+	float4		nlimit;
 
 	switch (strategy)
 	{
@@ -276,10 +279,11 @@ gin_trgm_triconsistent(PG_FUNCTION_ARGS)
 				if (check[i] != GIN_FALSE)
 					ntrue++;
 			}
+			nlimit = (strategy == SimilarityStrategyNumber) ? trgm_limit : trgm_substring_limit;
 #ifdef DIVUNION
-			res = (nkeys == ntrue) ? GIN_MAYBE : (((((float4) ntrue) / ((float4) (nkeys - ntrue))) >= trgm_limit) ? GIN_MAYBE : GIN_FALSE);
+			res = (nkeys == ntrue) ? GIN_MAYBE : (((((float4) ntrue) / ((float4) (nkeys - ntrue))) >= nlimit) ? GIN_MAYBE : GIN_FALSE);
 #else
-			res = (nkeys == 0) ? GIN_FALSE : (((((float4) ntrue) / ((float4) nkeys)) >= trgm_limit) ? GIN_MAYBE : GIN_FALSE);
+			res = (nkeys == 0) ? GIN_FALSE : (((((float4) ntrue) / ((float4) nkeys)) >= nlimit) ? GIN_MAYBE : GIN_FALSE);
 #endif
 			break;
 		case ILikeStrategyNumber:
