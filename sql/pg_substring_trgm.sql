@@ -23,3 +23,15 @@ select t,substring_similarity('Baykal',t) as sml from test_trgm2 where 'Baykal' 
 select t,substring_similarity('Kabankala',t) as sml from test_trgm2 where 'Kabankala' <% t order by sml desc, t;
 select t,substring_similarity('Baykal',t) as sml from test_trgm2 where t %> 'Baykal' order by sml desc, t;
 select t,substring_similarity('Kabankala',t) as sml from test_trgm2 where t %> 'Kabankala' order by sml desc, t;
+
+select set_substring_limit(0.5);
+select t,substring_similarity('Baykal',t) as sml from test_trgm2 where 'Baykal' <% t order by sml desc, t;
+select t,substring_similarity('Kabankala',t) as sml from test_trgm2 where 'Kabankala' <% t order by sml desc, t;
+select t,substring_similarity('Baykal',t) as sml from test_trgm2 where t %> 'Baykal' order by sml desc, t;
+select t,substring_similarity('Kabankala',t) as sml from test_trgm2 where t %> 'Kabankala' order by sml desc, t;
+
+select set_substring_limit(0.3);
+select t,substring_similarity('Baykal',t) as sml from test_trgm2 where 'Baykal' <% t order by sml desc, t;
+select t,substring_similarity('Kabankala',t) as sml from test_trgm2 where 'Kabankala' <% t order by sml desc, t;
+select t,substring_similarity('Baykal',t) as sml from test_trgm2 where t %> 'Baykal' order by sml desc, t;
+select t,substring_similarity('Kabankala',t) as sml from test_trgm2 where t %> 'Kabankala' order by sml desc, t;
