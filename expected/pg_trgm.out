@@ -61,7 +61,7 @@ select similarity('---', '####---');
 
 CREATE TABLE test_trgm(t text COLLATE "C");
 \copy test_trgm from 'data/trgm.data'
-select t,similarity(t,'qwertyu0988') as sml from test_trgm where t % 'qwertyu0988' order by sml desc, t COLLATE "C";
+select t,similarity(t,'qwertyu0988') as sml from test_trgm where t % 'qwertyu0988' order by sml desc, t;
       t      |   sml    
 -------------+----------
  qwertyu0988 |        1
@@ -1066,7 +1066,7 @@ select t,similarity(t,'qwertyu0988') as sml from test_trgm where t % 'qwertyu098
  qwertyu1000 | 0.411765
 (1000 rows)
 
-select t,similarity(t,'gwertyu0988') as sml from test_trgm where t % 'gwertyu0988' order by sml desc, t COLLATE "C";
+select t,similarity(t,'gwertyu0988') as sml from test_trgm where t % 'gwertyu0988' order by sml desc, t;
       t      |   sml    
 -------------+----------
  qwertyu0988 |      0.6
@@ -1181,7 +1181,7 @@ select t,similarity(t,'gwertyu0988') as sml from test_trgm where t % 'gwertyu098
  qwertyu0999 | 0.333333
 (110 rows)
 
-select t,similarity(t,'gwertyu1988') as sml from test_trgm where t % 'gwertyu1988' order by sml desc, t COLLATE "C";
+select t,similarity(t,'gwertyu1988') as sml from test_trgm where t % 'gwertyu1988' order by sml desc, t;
       t      |   sml    
 -------------+----------
  qwertyu0988 | 0.333333
@@ -1196,7 +1196,7 @@ select t <-> 'q0987wertyu0988', t from test_trgm order by t <-> 'q0987wertyu0988
 
 create index trgm_idx on test_trgm using gist (t gist_trgm_ops);
 set enable_seqscan=off;
-select t,similarity(t,'qwertyu0988') as sml from test_trgm where t % 'qwertyu0988' order by sml desc, t COLLATE "C";
+select t,similarity(t,'qwertyu0988') as sml from test_trgm where t % 'qwertyu0988' order by sml desc, t;
       t      |   sml    
 -------------+----------
  qwertyu0988 |        1
@@ -2201,7 +2201,7 @@ select t,similarity(t,'qwertyu0988') as sml from test_trgm where t % 'qwertyu098
  qwertyu1000 | 0.411765
 (1000 rows)
 
-select t,similarity(t,'gwertyu0988') as sml from test_trgm where t % 'gwertyu0988' order by sml desc, t COLLATE "C";
+select t,similarity(t,'gwertyu0988') as sml from test_trgm where t % 'gwertyu0988' order by sml desc, t;
       t      |   sml    
 -------------+----------
  qwertyu0988 |      0.6
@@ -2316,7 +2316,7 @@ select t,similarity(t,'gwertyu0988') as sml from test_trgm where t % 'gwertyu098
  qwertyu0999 | 0.333333
 (110 rows)
 
-select t,similarity(t,'gwertyu1988') as sml from test_trgm where t % 'gwertyu1988' order by sml desc, t COLLATE "C";
+select t,similarity(t,'gwertyu1988') as sml from test_trgm where t % 'gwertyu1988' order by sml desc, t;
       t      |   sml    
 -------------+----------
  qwertyu0988 | 0.333333
@@ -2341,7 +2341,7 @@ select t <-> 'q0987wertyu0988', t from test_trgm order by t <-> 'q0987wertyu0988
 drop index trgm_idx;
 create index trgm_idx on test_trgm using gin (t gin_trgm_ops);
 set enable_seqscan=off;
-select t,similarity(t,'qwertyu0988') as sml from test_trgm where t % 'qwertyu0988' order by sml desc, t COLLATE "C";
+select t,similarity(t,'qwertyu0988') as sml from test_trgm where t % 'qwertyu0988' order by sml desc, t;
       t      |   sml    
 -------------+----------
  qwertyu0988 |        1
@@ -3346,7 +3346,7 @@ select t,similarity(t,'qwertyu0988') as sml from test_trgm where t % 'qwertyu098
  qwertyu1000 | 0.411765
 (1000 rows)
 
-select t,similarity(t,'gwertyu0988') as sml from test_trgm where t % 'gwertyu0988' order by sml desc, t COLLATE "C";
+select t,similarity(t,'gwertyu0988') as sml from test_trgm where t % 'gwertyu0988' order by sml desc, t;
       t      |   sml    
 -------------+----------
  qwertyu0988 |      0.6
@@ -3461,7 +3461,7 @@ select t,similarity(t,'gwertyu0988') as sml from test_trgm where t % 'gwertyu098
  qwertyu0999 | 0.333333
 (110 rows)
 
-select t,similarity(t,'gwertyu1988') as sml from test_trgm where t % 'gwertyu1988' order by sml desc, t COLLATE "C";
+select t,similarity(t,'gwertyu1988') as sml from test_trgm where t % 'gwertyu1988' order by sml desc, t;
       t      |   sml    
 -------------+----------
  qwertyu0988 | 0.333333
