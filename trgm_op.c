@@ -277,6 +277,7 @@ generate_trgm(char *str, int slen)
 	TRGM	   *trg;
 	int			len;
 
+	protect_out_of_mem(slen);
 
 	trg = (TRGM *) palloc(TRGMHDRSIZE + sizeof(trgm) * (slen / 2 + 1) *3);
 	trg->flag = ARRKEY;
@@ -358,23 +359,6 @@ comp_ptrgm(const void *v1, const void *v2)
 	else
 		return 1;
 }
-
-#ifdef NOT_USED
-static void
-print_array(int *arr, int len)
-{
-	int i;
-	StringInfoData str;
-
-	initStringInfo(&str);
-
-	for (i = 0; i < len; i++)
-	{
-		appendStringInfo(&str, "%d ", arr[i]);
-	}
-	elog(NOTICE, "%s", str.data);
-}
-#endif
 
 /*
  * Iterative procedure if finding maximum similarity with substring.
@@ -727,17 +711,7 @@ generate_wildcard_trgm(const char *str, int slen)
 				bytelen;
 	const char *eword;
 
-	/*
-	 * Guard against possible overflow in the palloc requests below.  (We
-	 * don't worry about the additive constants, since palloc can detect
-	 * requests that are a little above MaxAllocSize --- we just need to
-	 * prevent integer overflow in the multiplications.)
-	 */
-	if ((Size) (slen / 2) >= (MaxAllocSize / (sizeof(trgm) * 3)) ||
-		(Size) slen >= (MaxAllocSize / pg_database_encoding_max_length()))
-		ereport(ERROR,
-				(errcode(ERRCODE_PROGRAM_LIMIT_EXCEEDED),
-				 errmsg("out of memory")));
+	protect_out_of_mem(slen);
 
 	trg = (TRGM *) palloc(TRGMHDRSIZE + sizeof(trgm) * (slen / 2 + 1) *3);
 	trg->flag = ARRKEY;
@@ -894,9 +868,7 @@ cnt_sml(TRGM *trg1, TRGM *trg2, bool inexact)
 
 	/* if inexact then len2 is equal to count */
 	if (inexact)
-	{
 		return CALCSML(count, len1, count);
-	}
 	else
 		return CALCSML(count, len1, len2);
 }
