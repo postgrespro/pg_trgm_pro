@@ -503,12 +503,7 @@ select t,substring_similarity('Kabankala',t) as sml from test_trgm2 where t %> '
  Tombankala                   | 0.6
 (17 rows)
 
-select set_substring_limit(0.5);
- set_substring_limit 
----------------------
-                 0.5
-(1 row)
-
+set "pg_trgm.substring_limit" to 0.5;
 select t,substring_similarity('Baykal',t) as sml from test_trgm2 where 'Baykal' <% t order by sml desc, t;
                   t                  |   sml    
 -------------------------------------+----------
@@ -697,12 +692,7 @@ select t,substring_similarity('Kabankala',t) as sml from test_trgm2 where t %> '
  Rokba Kala Sardoun               |      0.5
 (25 rows)
 
-select set_substring_limit(0.3);
- set_substring_limit 
----------------------
-                 0.3
-(1 row)
-
+set "pg_trgm.substring_limit" to 0.3;
 select t,substring_similarity('Baykal',t) as sml from test_trgm2 where 'Baykal' <% t order by sml desc, t;
                              t                             |   sml    
 -----------------------------------------------------------+----------

@@ -1,13 +1,15 @@
-/* contrib/pg_trgm/pg_trgm--1.3.sql */
+/* contrib/pg_trgm/pg_trgm--1.2.sql */
 
 -- complain if script is sourced in psql, rather than via CREATE EXTENSION
 \echo Use "CREATE EXTENSION pg_trgm" to load this file. \quit
 
+-- Deprecated function
 CREATE FUNCTION set_limit(float4)
 RETURNS float4
 AS 'MODULE_PATHNAME'
 LANGUAGE C STRICT VOLATILE;
 
+-- Deprecated function
 CREATE FUNCTION show_limit()
 RETURNS float4
 AS 'MODULE_PATHNAME'
@@ -26,7 +28,7 @@ LANGUAGE C STRICT IMMUTABLE;
 CREATE FUNCTION similarity_op(text,text)
 RETURNS bool
 AS 'MODULE_PATHNAME'
-LANGUAGE C STRICT STABLE;  -- stable because depends on trgm_limit
+LANGUAGE C STRICT STABLE;  -- stable because depends on pg_trgm.limit
 
 CREATE OPERATOR % (
         LEFTARG = text,
@@ -37,16 +39,6 @@ CREATE OPERATOR % (
         JOIN = contjoinsel
 );
 
-CREATE FUNCTION set_substring_limit(float4)
-RETURNS float4
-AS 'MODULE_PATHNAME'
-LANGUAGE C STRICT VOLATILE;
-
-CREATE FUNCTION show_substring_limit()
-RETURNS float4
-AS 'MODULE_PATHNAME'
-LANGUAGE C STRICT STABLE;
-
 CREATE FUNCTION substring_similarity(text,text)
 RETURNS float4
 AS 'MODULE_PATHNAME'
@@ -55,12 +47,12 @@ LANGUAGE C STRICT IMMUTABLE;
 CREATE FUNCTION substring_similarity_op(text,text)
 RETURNS bool
 AS 'MODULE_PATHNAME'
-LANGUAGE C STRICT STABLE;  -- stable because depends on trgm_substring_limit
+LANGUAGE C STRICT STABLE;  -- stable because depends on pg_trgm.substring_limit
 
 CREATE FUNCTION substring_similarity_commutator_op(text,text)
 RETURNS bool
 AS 'MODULE_PATHNAME'
-LANGUAGE C STRICT STABLE;  -- stable because depends on trgm_substring_limit
+LANGUAGE C STRICT STABLE;  -- stable because depends on pg_trgm.substring_limit
 
 CREATE OPERATOR <% (
         LEFTARG = text,
@@ -179,11 +171,7 @@ ALTER OPERATOR FAMILY gist_trgm_ops USING gist ADD
 
 ALTER OPERATOR FAMILY gist_trgm_ops USING gist ADD
         OPERATOR        5       pg_catalog.~ (text, text),
-        OPERATOR        6       pg_catalog.~* (text, text);
-
--- Add operators that are new in 9.6 (pg_trgm 1.3).
-
-ALTER OPERATOR FAMILY gist_trgm_ops USING gist ADD
+        OPERATOR        6       pg_catalog.~* (text, text),
         OPERATOR        7       %> (text, text);
 
 -- support functions for gin
@@ -233,9 +221,5 @@ AS 'MODULE_PATHNAME'
 LANGUAGE C IMMUTABLE STRICT;
 
 ALTER OPERATOR FAMILY gin_trgm_ops USING gin ADD
+        OPERATOR        7       %> (text, text),
         FUNCTION        6      (text,text) gin_trgm_triconsistent (internal, int2, text, int4, internal, internal, internal);
-
--- Add operators that are new in 9.6 (pg_trgm 1.3).
-
-ALTER OPERATOR FAMILY gin_trgm_ops USING gin ADD
-        OPERATOR        7       %> (text, text);
