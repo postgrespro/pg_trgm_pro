@@ -104,6 +104,12 @@ typedef char *BITVECP;
 #define GETARR(x)		( (trgm*)( (char*)x+TRGMHDRSIZE ) )
 #define ARRNELEM(x) ( ( VARSIZE(x) - TRGMHDRSIZE )/sizeof(trgm) )
 
+/*
+ * If DIVUNION is defined then similarity formula is:
+ * count / (len1 + len2 - count)
+ * else if DIVUNION is not defined then similarity formula is:
+ * count / max(len1, len2)
+ */
 #ifdef DIVUNION
 #define CALCSML(count, len1, len2) ((float4) (count)) / ((float4) ((len1) + (len2) - (count)))
 #else
@@ -112,8 +118,8 @@ typedef char *BITVECP;
 
 typedef struct TrgmPackedGraph TrgmPackedGraph;
 
-extern float4 trgm_limit;
-extern float4 trgm_substring_limit;
+extern double trgm_limit;
+extern double trgm_substring_limit;
 
 extern uint32 trgm2int(trgm *ptr);
 extern void compact_trigram(trgm *tptr, char *str, int bytelen);
