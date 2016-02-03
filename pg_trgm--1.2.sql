@@ -28,7 +28,7 @@ LANGUAGE C STRICT IMMUTABLE;
 CREATE FUNCTION similarity_op(text,text)
 RETURNS bool
 AS 'MODULE_PATHNAME'
-LANGUAGE C STRICT STABLE;  -- stable because depends on pg_trgm.limit
+LANGUAGE C STRICT STABLE;  -- stable because depends on pg_trgm.sml_limit
 
 CREATE OPERATOR % (
         LEFTARG = text,
@@ -39,25 +39,25 @@ CREATE OPERATOR % (
         JOIN = contjoinsel
 );
 
-CREATE FUNCTION substring_similarity(text,text)
+CREATE FUNCTION subword_similarity(text,text)
 RETURNS float4
 AS 'MODULE_PATHNAME'
 LANGUAGE C STRICT IMMUTABLE;
 
-CREATE FUNCTION substring_similarity_op(text,text)
+CREATE FUNCTION subword_similarity_op(text,text)
 RETURNS bool
 AS 'MODULE_PATHNAME'
-LANGUAGE C STRICT STABLE;  -- stable because depends on pg_trgm.substring_limit
+LANGUAGE C STRICT STABLE;  -- stable because depends on pg_trgm.subword_limit
 
-CREATE FUNCTION substring_similarity_commutator_op(text,text)
+CREATE FUNCTION subword_similarity_commutator_op(text,text)
 RETURNS bool
 AS 'MODULE_PATHNAME'
-LANGUAGE C STRICT STABLE;  -- stable because depends on pg_trgm.substring_limit
+LANGUAGE C STRICT STABLE;  -- stable because depends on pg_trgm.subword_limit
 
 CREATE OPERATOR <% (
         LEFTARG = text,
         RIGHTARG = text,
-        PROCEDURE = substring_similarity_op,
+        PROCEDURE = subword_similarity_op,
         COMMUTATOR = '%>',
         RESTRICT = contsel,
         JOIN = contjoinsel
@@ -66,7 +66,7 @@ CREATE OPERATOR <% (
 CREATE OPERATOR %> (
         LEFTARG = text,
         RIGHTARG = text,
-        PROCEDURE = substring_similarity_commutator_op,
+        PROCEDURE = subword_similarity_commutator_op,
         COMMUTATOR = '<%',
         RESTRICT = contsel,
         JOIN = contjoinsel
@@ -82,6 +82,30 @@ CREATE OPERATOR <-> (
         RIGHTARG = text,
         PROCEDURE = similarity_dist,
         COMMUTATOR = '<->'
+);
+
+CREATE FUNCTION subword_similarity_dist_op(text,text)
+RETURNS float4
+AS 'MODULE_PATHNAME'
+LANGUAGE C STRICT IMMUTABLE;
+
+CREATE FUNCTION subword_similarity_dist_commutator_op(text,text)
+RETURNS float4
+AS 'MODULE_PATHNAME'
+LANGUAGE C STRICT IMMUTABLE;
+
+CREATE OPERATOR <<-> (
+        LEFTARG = text,
+        RIGHTARG = text,
+        PROCEDURE = subword_similarity_dist_op,
+        COMMUTATOR = '<->>'
+);
+
+CREATE OPERATOR <->> (
+        LEFTARG = text,
+        RIGHTARG = text,
+        PROCEDURE = subword_similarity_dist_commutator_op,
+        COMMUTATOR = '<<->'
 );
 
 -- gist key
@@ -102,12 +126,12 @@ CREATE TYPE gtrgm (
 );
 
 -- support functions for gist
-CREATE FUNCTION gtrgm_consistent(internal,text,int,oid,internal)
+CREATE FUNCTION gtrgm_consistent(internal,text,smallint,oid,internal)
 RETURNS bool
 AS 'MODULE_PATHNAME'
 LANGUAGE C IMMUTABLE STRICT;
 
-CREATE FUNCTION gtrgm_distance(internal,text,int,oid)
+CREATE FUNCTION gtrgm_distance(internal,text,smallint,oid,internal)
 RETURNS float8
 AS 'MODULE_PATHNAME'
 LANGUAGE C IMMUTABLE STRICT;
@@ -132,8 +156,8 @@ RETURNS internal
 AS 'MODULE_PATHNAME'
 LANGUAGE C IMMUTABLE STRICT;
 
-CREATE FUNCTION gtrgm_union(bytea, internal)
-RETURNS _int4
+CREATE FUNCTION gtrgm_union(internal, internal)
+RETURNS gtrgm
 AS 'MODULE_PATHNAME'
 LANGUAGE C IMMUTABLE STRICT;
 
@@ -147,8 +171,8 @@ CREATE OPERATOR CLASS gist_trgm_ops
 FOR TYPE text USING gist
 AS
         OPERATOR        1       % (text, text),
-        FUNCTION        1       gtrgm_consistent (internal, text, int, oid, internal),
-        FUNCTION        2       gtrgm_union (bytea, internal),
+        FUNCTION        1       gtrgm_consistent (internal, text, smallint, oid, internal),
+        FUNCTION        2       gtrgm_union (internal, internal),
         FUNCTION        3       gtrgm_compress (internal),
         FUNCTION        4       gtrgm_decompress (internal),
         FUNCTION        5       gtrgm_penalty (internal, internal, internal),
@@ -165,14 +189,27 @@ ALTER OPERATOR FAMILY gist_trgm_ops USING gist ADD
         OPERATOR        2       <-> (text, text) FOR ORDER BY pg_catalog.float_ops,
         OPERATOR        3       pg_catalog.~~ (text, text),
         OPERATOR        4       pg_catalog.~~* (text, text),
-        FUNCTION        8 (text, text)  gtrgm_distance (internal, text, int, oid);
+        FUNCTION        8 (text, text)  gtrgm_distance (internal, text, smallint, oid, internal);
 
 -- Add operators that are new in 9.3.
 
 ALTER OPERATOR FAMILY gist_trgm_ops USING gist ADD
         OPERATOR        5       pg_catalog.~ (text, text),
-        OPERATOR        6       pg_catalog.~* (text, text),
+        OPERATOR        6       pg_catalog.~* (text, text);
+
+-- Add operators that are new in 9.6 (pg_trgm 1.2).
+
+ALTER OPERATOR FAMILY gist_trgm_ops USING gist ADD
         OPERATOR        7       %> (text, text);
+
+-- In pre-9.5 we have not the recheck parameter in the distance function.
+DO $$
+BEGIN
+        IF (SELECT setting::int FROM pg_settings WHERE name = 'server_version_num') >= 90500 THEN
+                ALTER OPERATOR FAMILY gist_trgm_ops USING gist ADD
+                        OPERATOR        8       <->> (text, text) FOR ORDER BY pg_catalog.float_ops;
+        END IF;
+END $$;
 
 -- support functions for gin
 CREATE FUNCTION gin_extract_value_trgm(text, internal)

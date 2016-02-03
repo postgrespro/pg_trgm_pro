@@ -225,7 +225,7 @@ gtrgm_consistent(PG_FUNCTION_ARGS)
 		switch (strategy)
 		{
 			case SimilarityStrategyNumber:
-			case SubstringSimilarityStrategyNumber:
+			case SubwordSimilarityStrategyNumber:
 				qtrg = generate_trgm(VARDATA(query),
 									 querysize - VARHDRSZ);
 				break;
@@ -294,10 +294,11 @@ gtrgm_consistent(PG_FUNCTION_ARGS)
 	switch (strategy)
 	{
 		case SimilarityStrategyNumber:
-		case SubstringSimilarityStrategyNumber:
-			/* Similarity search is exact. Substring similarity search is inexact */
-			*recheck = (strategy == SubstringSimilarityStrategyNumber);
-			nlimit = (strategy == SimilarityStrategyNumber) ? trgm_limit : trgm_substring_limit;
+		case SubwordSimilarityStrategyNumber:
+			/* Similarity search is exact. Subword similarity search is inexact */
+			*recheck = (strategy == SubwordSimilarityStrategyNumber);
+			nlimit = (strategy == SimilarityStrategyNumber) ?
+				trgm_sml_limit : trgm_subword_limit;
 
 			if (GIST_LEAF(entry))
 			{					/* all leafs contains orig trgm */
@@ -436,11 +437,19 @@ gtrgm_distance(PG_FUNCTION_ARGS)
 	StrategyNumber strategy = (StrategyNumber) PG_GETARG_UINT16(2);
 
 	/* Oid		subtype = PG_GETARG_OID(3); */
+	#if PG_VERSION_NUM >= 90500
+	bool	   *recheck = (bool *) PG_GETARG_POINTER(4);
+	#endif
+
 	TRGM	   *key = (TRGM *) DatumGetPointer(entry->key);
 	TRGM	   *qtrg;
 	float8		res;
 	Size		querysize = VARSIZE(query);
 	char	   *cache = (char *) fcinfo->flinfo->fn_extra;
+
+	#if PG_VERSION_NUM >= 90500
+	*recheck = strategy == SubwordDistanceStrategyNumber;
+	#endif
 
 	/*
 	 * Cache the generated trigrams across multiple calls with the same query.
@@ -471,9 +480,10 @@ gtrgm_distance(PG_FUNCTION_ARGS)
 	switch (strategy)
 	{
 		case DistanceStrategyNumber:
+		case SubwordDistanceStrategyNumber:
 			if (GIST_LEAF(entry))
 			{					/* all leafs contains orig trgm */
-				res = 1.0 - cnt_sml(key, qtrg, false);
+				res = 1.0 - cnt_sml(qtrg, key, strategy == SubwordDistanceStrategyNumber);
 			}
 			else if (ISALLTRUE(key))
 			{					/* all leafs contains orig trgm */

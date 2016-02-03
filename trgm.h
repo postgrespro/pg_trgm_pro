@@ -26,14 +26,14 @@
 #define DIVUNION
 
 /* operator strategy numbers */
-#define SimilarityStrategyNumber			1
-#define DistanceStrategyNumber				2
-#define LikeStrategyNumber					3
-#define ILikeStrategyNumber					4
-#define RegExpStrategyNumber				5
-#define RegExpICaseStrategyNumber			6
-#define SubstringSimilarityStrategyNumber	7
-
+#define SimilarityStrategyNumber		1
+#define DistanceStrategyNumber			2
+#define LikeStrategyNumber				3
+#define ILikeStrategyNumber				4
+#define RegExpStrategyNumber			5
+#define RegExpICaseStrategyNumber		6
+#define SubwordSimilarityStrategyNumber	7
+#define SubwordDistanceStrategyNumber	8
 
 typedef char trgm[3];
 
@@ -118,8 +118,8 @@ typedef char *BITVECP;
 
 typedef struct TrgmPackedGraph TrgmPackedGraph;
 
-extern double trgm_limit;
-extern double trgm_substring_limit;
+extern double trgm_sml_limit;
+extern double trgm_subword_limit;
 
 extern uint32 trgm2int(trgm *ptr);
 extern void compact_trigram(trgm *tptr, char *str, int bytelen);

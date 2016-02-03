@@ -95,7 +95,7 @@ gin_extract_query_trgm(PG_FUNCTION_ARGS)
 	switch (strategy)
 	{
 		case SimilarityStrategyNumber:
-		case SubstringSimilarityStrategyNumber:
+		case SubwordSimilarityStrategyNumber:
 			trg = generate_trgm(VARDATA(val), VARSIZE(val) - VARHDRSZ);
 			break;
 		case ILikeStrategyNumber:
@@ -183,6 +183,7 @@ gin_trgm_consistent(PG_FUNCTION_ARGS)
 	bool		res;
 	int32		i,
 				ntrue;
+	double		nlimit;
 
 	/* All cases served by this function are inexact */
 	*recheck = true;
@@ -190,7 +191,10 @@ gin_trgm_consistent(PG_FUNCTION_ARGS)
 	switch (strategy)
 	{
 		case SimilarityStrategyNumber:
-		case SubstringSimilarityStrategyNumber:
+		case SubwordSimilarityStrategyNumber:
+			nlimit = (strategy == SimilarityStrategyNumber) ?
+				trgm_sml_limit : trgm_subword_limit;
+
 			/* Count the matches */
 			ntrue = 0;
 			for (i = 0; i < nkeys; i++)
@@ -214,7 +218,8 @@ gin_trgm_consistent(PG_FUNCTION_ARGS)
 			 * similarity is just c / len1.
 			 * So, independly on DIVUNION the upper bound formula is the same.
 			 */
-			res = (nkeys == 0) ? false : (((((float4) ntrue) / ((float4) nkeys))) >= trgm_limit);
+			res = (nkeys == 0) ? false :
+				(((((float4) ntrue) / ((float4) nkeys))) >= nlimit);
 			break;
 		case ILikeStrategyNumber:
 #ifndef IGNORECASE
@@ -276,11 +281,15 @@ gin_trgm_triconsistent(PG_FUNCTION_ARGS)
 	int32		i,
 				ntrue;
 	bool	   *boolcheck;
+	double		nlimit;
 
 	switch (strategy)
 	{
 		case SimilarityStrategyNumber:
-		case SubstringSimilarityStrategyNumber:
+		case SubwordSimilarityStrategyNumber:
+			nlimit = (strategy == SimilarityStrategyNumber) ?
+				trgm_sml_limit : trgm_subword_limit;
+
 			/* Count the matches */
 			ntrue = 0;
 			for (i = 0; i < nkeys; i++)
@@ -292,7 +301,8 @@ gin_trgm_triconsistent(PG_FUNCTION_ARGS)
 			/*
 			 * See comment in gin_trgm_consistent() about * upper bound formula
 			 */
-			res = (nkeys == 0) ? GIN_FALSE : (((((float4) ntrue) / ((float4) nkeys)) >= trgm_limit) ? GIN_MAYBE : GIN_FALSE);
+			res = (nkeys == 0) ? GIN_FALSE :
+				(((((float4) ntrue) / ((float4) nkeys)) >= nlimit) ? GIN_MAYBE : GIN_FALSE);
 			break;
 		case ILikeStrategyNumber:
 #ifndef IGNORECASE
