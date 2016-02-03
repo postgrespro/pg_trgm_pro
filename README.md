@@ -49,7 +49,7 @@ The module provides GUC parameters.
 | pg_trgm.sml_limit     | real    | Sets the current similarity threshold that is used by the **%** operator. The threshold must be between 0 and 1 (default is 0.3).
 | pg_trgm.subword_limit | real    | Sets the current subword similarity threshold that is used by the **%>** operator. The threshold must be between 0 and 1 (default is 0.6).
 
-GiST and GIN indexes support the operator **%>**. The operator **<->>* is supported by the GiST index.
+GiST and GIN indexes support the operator **%>**. The operator **<->>** is supported by the GiST index.
 
 ## Examples
 
@@ -80,7 +80,7 @@ SELECT t, subword_similarity('word', t) AS sml
   ORDER BY sml DESC, t;
 ```
 
-This will return all values in the text column that have a word which sufficiently similar to *word*, sorted from best match to worst. The index will be used to make this a fast operation even over very large data sets.
+This will return all values in the text column that have a word which sufficiently similar to `word`, sorted from best match to worst. The index will be used to make this a fast operation even over very large data sets.
 
 A variant of the above query is:
 
