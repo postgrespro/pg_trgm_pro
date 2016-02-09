@@ -302,7 +302,12 @@ gtrgm_consistent(PG_FUNCTION_ARGS)
 
 			if (GIST_LEAF(entry))
 			{					/* all leafs contains orig trgm */
-				float4		tmpsml = cnt_sml(qtrg, key, *recheck);
+				/*
+				 * Prevent gcc optimizing the tmpsml variable using volatile
+				 * keyword. Otherwise comparison of nlimit and tmpsml may give
+				 * wrong results.
+				 */
+				float4 volatile tmpsml = cnt_sml(qtrg, key, *recheck);
 
 				/* strange bug at freebsd 5.2.1 and gcc 3.3.3 */
 				res = (*(int *) &tmpsml == *(int *) &nlimit || tmpsml > nlimit);
