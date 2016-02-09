@@ -483,7 +483,13 @@ gtrgm_distance(PG_FUNCTION_ARGS)
 		case SubwordDistanceStrategyNumber:
 			if (GIST_LEAF(entry))
 			{					/* all leafs contains orig trgm */
-				res = 1.0 - cnt_sml(qtrg, key, strategy == SubwordDistanceStrategyNumber);
+				/*
+				 * Prevent gcc optimizing the sml variable using volatile
+				 * keyword. Otherwise res can differ from the
+				 * subword_similarity_dist_op() function.
+				 */
+				float4 volatile sml = cnt_sml(qtrg, key, strategy == SubwordDistanceStrategyNumber);
+				res = 1.0 - sml;
 			}
 			else if (ISALLTRUE(key))
 			{					/* all leafs contains orig trgm */
