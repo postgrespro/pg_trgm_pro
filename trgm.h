@@ -32,8 +32,8 @@
 #define ILikeStrategyNumber				4
 #define RegExpStrategyNumber			5
 #define RegExpICaseStrategyNumber		6
-#define SubwordSimilarityStrategyNumber	7
-#define SubwordDistanceStrategyNumber	8
+#define WordSimilarityStrategyNumber	7
+#define WordDistanceStrategyNumber		8
 
 typedef char trgm[3];
 
@@ -118,8 +118,8 @@ typedef char *BITVECP;
 
 typedef struct TrgmPackedGraph TrgmPackedGraph;
 
-extern double trgm_sml_limit;
-extern double trgm_subword_limit;
+extern double similarity_threshold;
+extern double word_similarity_threshold;
 
 extern uint32 trgm2int(trgm *ptr);
 extern void compact_trigram(trgm *tptr, char *str, int bytelen);

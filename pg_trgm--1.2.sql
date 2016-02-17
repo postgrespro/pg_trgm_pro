@@ -28,7 +28,7 @@ LANGUAGE C STRICT IMMUTABLE;
 CREATE FUNCTION similarity_op(text,text)
 RETURNS bool
 AS 'MODULE_PATHNAME'
-LANGUAGE C STRICT STABLE;  -- stable because depends on pg_trgm.sml_limit
+LANGUAGE C STRICT STABLE;  -- stable because depends on pg_trgm.similarity_threshold
 
 CREATE OPERATOR % (
         LEFTARG = text,
@@ -39,25 +39,25 @@ CREATE OPERATOR % (
         JOIN = contjoinsel
 );
 
-CREATE FUNCTION subword_similarity(text,text)
+CREATE FUNCTION word_similarity(text,text)
 RETURNS float4
 AS 'MODULE_PATHNAME'
 LANGUAGE C STRICT IMMUTABLE;
 
-CREATE FUNCTION subword_similarity_op(text,text)
+CREATE FUNCTION word_similarity_op(text,text)
 RETURNS bool
 AS 'MODULE_PATHNAME'
-LANGUAGE C STRICT STABLE;  -- stable because depends on pg_trgm.subword_limit
+LANGUAGE C STRICT STABLE;  -- stable because depends on pg_trgm.word_similarity_threshold
 
-CREATE FUNCTION subword_similarity_commutator_op(text,text)
+CREATE FUNCTION word_similarity_commutator_op(text,text)
 RETURNS bool
 AS 'MODULE_PATHNAME'
-LANGUAGE C STRICT STABLE;  -- stable because depends on pg_trgm.subword_limit
+LANGUAGE C STRICT STABLE;  -- stable because depends on pg_trgm.word_similarity_threshold
 
 CREATE OPERATOR <% (
         LEFTARG = text,
         RIGHTARG = text,
-        PROCEDURE = subword_similarity_op,
+        PROCEDURE = word_similarity_op,
         COMMUTATOR = '%>',
         RESTRICT = contsel,
         JOIN = contjoinsel
@@ -66,7 +66,7 @@ CREATE OPERATOR <% (
 CREATE OPERATOR %> (
         LEFTARG = text,
         RIGHTARG = text,
-        PROCEDURE = subword_similarity_commutator_op,
+        PROCEDURE = word_similarity_commutator_op,
         COMMUTATOR = '<%',
         RESTRICT = contsel,
         JOIN = contjoinsel
@@ -84,12 +84,12 @@ CREATE OPERATOR <-> (
         COMMUTATOR = '<->'
 );
 
-CREATE FUNCTION subword_similarity_dist_op(text,text)
+CREATE FUNCTION word_similarity_dist_op(text,text)
 RETURNS float4
 AS 'MODULE_PATHNAME'
 LANGUAGE C STRICT IMMUTABLE;
 
-CREATE FUNCTION subword_similarity_dist_commutator_op(text,text)
+CREATE FUNCTION word_similarity_dist_commutator_op(text,text)
 RETURNS float4
 AS 'MODULE_PATHNAME'
 LANGUAGE C STRICT IMMUTABLE;
@@ -97,14 +97,14 @@ LANGUAGE C STRICT IMMUTABLE;
 CREATE OPERATOR <<-> (
         LEFTARG = text,
         RIGHTARG = text,
-        PROCEDURE = subword_similarity_dist_op,
+        PROCEDURE = word_similarity_dist_op,
         COMMUTATOR = '<->>'
 );
 
 CREATE OPERATOR <->> (
         LEFTARG = text,
         RIGHTARG = text,
-        PROCEDURE = subword_similarity_dist_commutator_op,
+        PROCEDURE = word_similarity_dist_commutator_op,
         COMMUTATOR = '<<->'
 );
 
