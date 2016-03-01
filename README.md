@@ -2,15 +2,25 @@
 
 ## Introduction
 
-The pg_trgm module provides functions and operators for determining the similarity of alphanumeric text based on trigram matching, as well as index operator classes that support fast searching for similar strings.
+The pg_trgm module provides functions and operators for determining the
+similarity of alphanumeric text based on trigram matching, as well as index
+operator classes that support fast searching for similar strings.
 
-A trigram is a group of three consecutive characters taken from a string. We can measure the similarity of two strings by counting the number of trigrams they share. This simple idea turns out to be very effective for measuring the similarity of words in many natural languages.
+A trigram is a group of three consecutive characters taken from a string. We can
+measure the similarity of two strings by counting the number of trigrams they
+share. This simple idea turns out to be very effective for measuring the
+similarity of words in many natural languages.
 
-The original module is located in [GitHub](https://github.com/postgres/postgres/tree/master/contrib/pg_trgm). This module provides a new function and new operators which provide fuzzy searching for word in a text.
+The original module is located in
+[GitHub](https://github.com/postgres/postgres/tree/master/contrib/pg_trgm). This
+module provides a new function and new operators which provide fuzzy searching
+for word in a text.
 
 ## License
 
-This module available from [GitHub](https://github.com/postgrespro/pg_trgm_pro) under the same license as [PostgreSQL](http://www.postgresql.org/about/licence/) and supports PostgreSQL 9.4+.
+This module available from [GitHub](https://github.com/postgrespro/pg_trgm_pro)
+under the same license as [PostgreSQL](http://www.postgresql.org/about/licence/)
+and supports PostgreSQL 9.4+.
 
 ## Installation
 
@@ -49,7 +59,8 @@ The module provides GUC parameters.
 | pg_trgm.similarity_threshold      | real    | Sets the current similarity threshold that is used by the **%** operator. The threshold must be between 0 and 1 (default is 0.3).
 | pg_trgm.word_similarity_threshold | real    | Sets the current word similarity threshold that is used by the **%>** operator. The threshold must be between 0 and 1 (default is 0.6).
 
-GiST and GIN indexes support the operator **%>**. The operator **<->>** is supported by the GiST index.
+GiST and GIN indexes support the operator **%>**. The operator **<->>** is
+supported by the GiST index.
 
 ## Examples
 
@@ -80,7 +91,8 @@ SELECT t, word_similarity('word', t) AS sml
   ORDER BY sml DESC, t;
 ```
 
-This will return all values in the text column that have a word which sufficiently similar to `word`, sorted from best match to worst. The index will be used to make this a fast operation even over very large data sets.
+This will return all values in the text column that have a word which
+sufficiently similar to `word`, sorted from best match to worst. The index will be used to make this a fast operation even over very large data sets.
 
 A variant of the above query is:
 
@@ -90,4 +102,11 @@ SELECT t, t <->> 'word' AS dist
   ORDER BY dist LIMIT 10;
 ```
 
-This can be implemented quite efficiently by GiST indexes, but not by GIN indexes.
+This can be implemented quite efficiently by GiST indexes, but not by GIN
+indexes.
+
+## Authors
+
+Oleg Bartunov <oleg@sai.msu.su>
+
+Teodor Sigaev <teodor@sigaev.ru>
