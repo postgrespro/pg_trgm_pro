@@ -9,6 +9,7 @@
 
 #include "catalog/pg_type.h"
 #include "tsearch/ts_locale.h"
+#include "utils/lsyscache.h"
 #include "utils/memutils.h"
 #include "utils/pg_crc.h"
 
@@ -90,12 +91,17 @@ Datum
 set_limit(PG_FUNCTION_ARGS)
 {
 	float4		nlimit = PG_GETARG_FLOAT4(0);
+	char	   *nlimit_str;
+	Oid			func_out_oid;
+	bool		is_varlena;
 
-	if (nlimit < 0 || nlimit > 1.0)
-		ereport(ERROR,
-				(errcode(ERRCODE_NUMERIC_VALUE_OUT_OF_RANGE),
-				 errmsg("wrong threshold, should be between 0 and 1")));
-	similarity_threshold = nlimit;
+	getTypeOutputInfo(FLOAT4OID, &func_out_oid, &is_varlena);
+
+	nlimit_str = OidOutputFunctionCall(func_out_oid, Float4GetDatum(nlimit));
+
+	SetConfigOption("pg_trgm.similarity_threshold", nlimit_str,
+					PGC_USERSET, PGC_S_SESSION);
+
 	PG_RETURN_FLOAT4(similarity_threshold);
 }
 
@@ -632,7 +638,7 @@ calc_word_similarity(char *str1, int slen1, char *str2, int slen2,
 
 
 /*
- * Extract the next non-wildcard part of a search string, ie, a word bounded
+ * Extract the next non-wildcard part of a search string, i.e. a word bounded
  * by '_' or '%' meta-characters, non-word characters or string end.
  *
  * str: source string, of length lenstr bytes (need not be null-terminated)
