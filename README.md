@@ -43,23 +43,23 @@ The pg_trgm module provides the new function.
 
 |          Function           | Returns |                      Description
 | --------------------------- | ------- | ---------------------------------------------------
-| word_similarity(text, text) | real    | Returns a number that indicates how similar the first string to the most similar word of the second string.  The range of the result is zero (indicating that the two strings are completely dissimilar) to one (indicating that the first string is identical to one of the word of the second string).
+| word_similarity(text, text) | real    | Returns a number that indicates how similar the first string to the most similar word of the second string. The function searches in the second string a most similar word not a most similar substring. The range of the result is zero (indicating that the two strings are completely dissimilar) to one (indicating that the first string is identical to one of the word of the second string).
 
 The module provides new operators.
 
 |    Operator    | Returns |                      Description
 | -------------- | ------- | ---------------------------------------------------
-| text %> text   | boolean | Returns **true** if its arguments have a word similarity that is greater than the current word similarity threshold set by **pg_trgm.word_similarity_threshold** parameter.
-| text <->> text | real    | Returns the **distance** between the arguments, that is one minus the **word_similarity()** value.
+| text <% text   | boolean | Returns **true** if its arguments have a word similarity that is greater than the current word similarity threshold set by **pg_trgm.word_similarity_threshold** parameter.
+| text <<-> text | real    | Returns the **distance** between the arguments, that is one minus the **word_similarity()** value.
 
 The module provides GUC parameters.
 
 |       Parameter                   | Returns |                      Description
 | --------------------------------- | ------- | ---------------------------------------------------
 | pg_trgm.similarity_threshold      | real    | Sets the current similarity threshold that is used by the **%** operator. The threshold must be between 0 and 1 (default is 0.3).
-| pg_trgm.word_similarity_threshold | real    | Sets the current word similarity threshold that is used by the **%>** operator. The threshold must be between 0 and 1 (default is 0.6).
+| pg_trgm.word_similarity_threshold | real    | Sets the current word similarity threshold that is used by the **<%** operator. The threshold must be between 0 and 1 (default is 0.6).
 
-GiST and GIN indexes support the operator **%>**. The operator **<->>** is
+GiST and GIN indexes support the operator **<%**. The operator **<<->** is
 supported by the GiST index.
 
 ## Examples
@@ -87,7 +87,7 @@ Now you can use an index on the **t** column for word similarity. For example:
 ```sql
 SELECT t, word_similarity('word', t) AS sml
   FROM test_trgm
-  WHERE t %> 'word'
+  WHERE 'word' <% t
   ORDER BY sml DESC, t;
 ```
 
@@ -97,7 +97,7 @@ sufficiently similar to `word`, sorted from best match to worst. The index will 
 A variant of the above query is:
 
 ```sql
-SELECT t, t <->> 'word' AS dist
+SELECT t, 'word' <<-> t AS dist
   FROM test_trgm
   ORDER BY dist LIMIT 10;
 ```
