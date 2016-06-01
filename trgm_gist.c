@@ -310,7 +310,7 @@ gtrgm_consistent(PG_FUNCTION_ARGS)
 				float4 volatile tmpsml = cnt_sml(qtrg, key, *recheck);
 
 				/* strange bug at freebsd 5.2.1 and gcc 3.3.3 */
-				res = (*(int *) &tmpsml == *(int *) &nlimit || tmpsml > nlimit);
+				res = (*(int *) &tmpsml == *(int *) &nlimit || tmpsml >= nlimit);
 			}
 			else if (ISALLTRUE(key))
 			{					/* non-leaf contains signature */
