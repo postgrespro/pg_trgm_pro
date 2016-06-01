@@ -48,7 +48,7 @@ The pg_trgm module provides the new functions.
 |            Function              | Returns |                      Description
 | -------------------------------- | ------- | ---------------------------------------------------
 | substring_similarity(text, text) | real    | Returns a number that indicates how similar the first string to the most similar word of the second string. The function searches in the second string a most similar word not a most similar substring. The range of the result is zero (indicating that the two strings are completely dissimilar) to one (indicating that the first string is identical to one of the word of the second string).
-| show_substring_limit()           | real    | Sets the current substring similarity threshold that is used by the **<%** operator.
+| show_substring_limit()           | real    | Returns the current substring similarity threshold that is used by the **<%** operator.
 | set_substring_limit(real)        | real    | Sets the current substring similarity threshold that is used by the **<%** operator. The threshold must be between 0 and 1 (default is 0.6).
 
 The module provides new operators.
