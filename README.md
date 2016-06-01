@@ -56,7 +56,6 @@ The module provides new operators.
 |    Operator    | Returns |                      Description
 | -------------- | ------- | ---------------------------------------------------
 | text <% text   | boolean | Returns **true** if its arguments have a substring similarity that is greater than the current substring similarity threshold set by **set_substring_limit()**.
-| text <<-> text | real    | Returns the **distance** between the arguments, that is one minus the **substring_similarity()** value.
 
 GiST and GIN indexes support the operator **<%**. The operator **<<->** is
 supported by the GiST index.
@@ -92,17 +91,6 @@ SELECT t, substring_similarity('word', t) AS sml
 
 This will return all values in the text column that have a word which
 sufficiently similar to `word`, sorted from best match to worst. The index will be used to make this a fast operation even over very large data sets.
-
-A variant of the above query is:
-
-```sql
-SELECT t, 'word' <<-> t AS dist
-  FROM test_trgm
-  ORDER BY dist LIMIT 10;
-```
-
-This can be implemented quite efficiently by GiST indexes, but not by GIN
-indexes.
 
 ## Authors
 

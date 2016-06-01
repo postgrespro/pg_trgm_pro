@@ -68,18 +68,6 @@ select t,substring_similarity('Kabankala',t) as sml from test_trgm2 where t %> '
  Ntombankala School           | 0.6
 (4 rows)
 
-select t <->> 'Kabankala', t from test_trgm2 order by t <->> 'Kabankala' limit 7;
- ?column? |                t                 
-----------+----------------------------------
-        0 | Kabankala
-      0.1 | Kabankalan City Public Plaza
-      0.3 | Abankala
-      0.4 | Ntombankala School
- 0.416667 | Kabakala
-      0.5 | Nehalla Bankalah Reserved Forest
- 0.538462 | Kabikala
-(7 rows)
-
 create index trgm_idx2 on test_trgm2 using gist (t gist_trgm_ops);
 set enable_seqscan=off;
 select t,substring_similarity('Baykal',t) as sml from test_trgm2 where 'Baykal' <% t order by sml desc, t;
@@ -149,18 +137,6 @@ select t,substring_similarity('Kabankala',t) as sml from test_trgm2 where t %> '
  Abankala                     | 0.7
  Ntombankala School           | 0.6
 (4 rows)
-
-select t <->> 'Kabankala', t from test_trgm2 order by t <->> 'Kabankala' limit 7;
- ?column? |                t                 
-----------+----------------------------------
-        0 | Kabankala
-      0.1 | Kabankalan City Public Plaza
-      0.3 | Abankala
-      0.4 | Ntombankala School
- 0.416667 | Kabakala
-      0.5 | Nehalla Bankalah Reserved Forest
- 0.538462 | Kabikala
-(7 rows)
 
 drop index trgm_idx2;
 create index trgm_idx2 on test_trgm2 using gin (t gin_trgm_ops);

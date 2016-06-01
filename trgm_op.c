@@ -39,8 +39,6 @@ PG_FUNCTION_INFO_V1(similarity_dist);
 PG_FUNCTION_INFO_V1(similarity_op);
 PG_FUNCTION_INFO_V1(substring_similarity_op);
 PG_FUNCTION_INFO_V1(substring_similarity_commutator_op);
-PG_FUNCTION_INFO_V1(substring_similarity_dist_op);
-PG_FUNCTION_INFO_V1(substring_similarity_dist_commutator_op);
 
 /* Trigram with position */
 typedef struct
@@ -1113,36 +1111,4 @@ substring_similarity_commutator_op(PG_FUNCTION_ARGS)
 	PG_FREE_IF_COPY(in1, 0);
 	PG_FREE_IF_COPY(in2, 1);
 	PG_RETURN_BOOL(res >= trgm_substring_limit);
-}
-
-Datum
-substring_similarity_dist_op(PG_FUNCTION_ARGS)
-{
-	text	   *in1 = PG_GETARG_TEXT_PP(0);
-	text	   *in2 = PG_GETARG_TEXT_PP(1);
-	float4		res;
-
-	res = calc_substring_similarity(VARDATA_ANY(in1), VARSIZE_ANY_EXHDR(in1),
-									VARDATA_ANY(in2), VARSIZE_ANY_EXHDR(in2),
-									false);
-
-	PG_FREE_IF_COPY(in1, 0);
-	PG_FREE_IF_COPY(in2, 1);
-	PG_RETURN_FLOAT4(1.0 - res);
-}
-
-Datum
-substring_similarity_dist_commutator_op(PG_FUNCTION_ARGS)
-{
-	text	   *in1 = PG_GETARG_TEXT_PP(0);
-	text	   *in2 = PG_GETARG_TEXT_PP(1);
-	float4		res;
-
-	res = calc_substring_similarity(VARDATA_ANY(in2), VARSIZE_ANY_EXHDR(in2),
-									VARDATA_ANY(in1), VARSIZE_ANY_EXHDR(in1),
-									false);
-
-	PG_FREE_IF_COPY(in1, 0);
-	PG_FREE_IF_COPY(in2, 1);
-	PG_RETURN_FLOAT4(1.0 - res);
 }

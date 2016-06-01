@@ -33,7 +33,6 @@
 #define RegExpStrategyNumber				5
 #define RegExpICaseStrategyNumber			6
 #define SubstringSimilarityStrategyNumber	7
-#define SubstringDistanceStrategyNumber		8
 
 typedef char trgm[3];
 

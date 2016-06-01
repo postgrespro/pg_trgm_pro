@@ -1,4 +1,4 @@
-/* contrib/pg_trgm/pg_trgm--1.2.sql */
+/* contrib/pg_trgm/pg_trgm--1.3.sql */
 
 -- complain if script is sourced in psql, rather than via CREATE EXTENSION
 \echo Use "CREATE EXTENSION pg_trgm" to load this file. \quit
@@ -92,30 +92,6 @@ CREATE OPERATOR <-> (
         COMMUTATOR = '<->'
 );
 
-CREATE FUNCTION substring_similarity_dist_op(text,text)
-RETURNS float4
-AS 'MODULE_PATHNAME'
-LANGUAGE C STRICT IMMUTABLE;
-
-CREATE FUNCTION substring_similarity_dist_commutator_op(text,text)
-RETURNS float4
-AS 'MODULE_PATHNAME'
-LANGUAGE C STRICT IMMUTABLE;
-
-CREATE OPERATOR <<-> (
-        LEFTARG = text,
-        RIGHTARG = text,
-		PROCEDURE = substring_similarity_dist_op,
-        COMMUTATOR = '<->>'
-);
-
-CREATE OPERATOR <->> (
-        LEFTARG = text,
-        RIGHTARG = text,
-		PROCEDURE = substring_similarity_dist_commutator_op,
-        COMMUTATOR = '<<->'
-);
-
 -- gist key
 CREATE FUNCTION gtrgm_in(cstring)
 RETURNS gtrgm
@@ -205,19 +181,10 @@ ALTER OPERATOR FAMILY gist_trgm_ops USING gist ADD
         OPERATOR        5       pg_catalog.~ (text, text),
         OPERATOR        6       pg_catalog.~* (text, text);
 
--- Add operators that are new in 9.6 (pg_trgm 1.2).
+-- Add operators that are new in 9.6 (pg_trgm 1.3).
 
 ALTER OPERATOR FAMILY gist_trgm_ops USING gist ADD
         OPERATOR        7       %> (text, text);
-
--- In pre-9.5 we have not the recheck parameter in the distance function.
-DO $$
-BEGIN
-        IF (SELECT setting::int FROM pg_settings WHERE name = 'server_version_num') >= 90500 THEN
-                ALTER OPERATOR FAMILY gist_trgm_ops USING gist ADD
-                        OPERATOR        8       <->> (text, text) FOR ORDER BY pg_catalog.float_ops;
-        END IF;
-END $$;
 
 -- support functions for gin
 CREATE FUNCTION gin_extract_value_trgm(text, internal)
@@ -266,5 +233,9 @@ AS 'MODULE_PATHNAME'
 LANGUAGE C IMMUTABLE STRICT;
 
 ALTER OPERATOR FAMILY gin_trgm_ops USING gin ADD
-        OPERATOR        7       %> (text, text),
         FUNCTION        6      (text,text) gin_trgm_triconsistent (internal, int2, text, int4, internal, internal, internal);
+
+-- Add operators that are new in 9.6 (pg_trgm 1.3).
+
+ALTER OPERATOR FAMILY gin_trgm_ops USING gin ADD
+        OPERATOR        7       %> (text, text);
