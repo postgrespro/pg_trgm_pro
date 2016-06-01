@@ -57,8 +57,7 @@ The module provides new operators.
 | -------------- | ------- | ---------------------------------------------------
 | text <% text   | boolean | Returns **true** if its arguments have a substring similarity that is greater than the current substring similarity threshold set by **set_substring_limit()**.
 
-GiST and GIN indexes support the operator **<%**. The operator **<<->** is
-supported by the GiST index.
+GiST and GIN indexes support the operator **<%**.
 
 ## Examples
 
