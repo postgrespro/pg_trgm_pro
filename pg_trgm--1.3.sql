@@ -3,13 +3,11 @@
 -- complain if script is sourced in psql, rather than via CREATE EXTENSION
 \echo Use "CREATE EXTENSION pg_trgm" to load this file. \quit
 
--- Deprecated function
 CREATE FUNCTION set_limit(float4)
 RETURNS float4
 AS 'MODULE_PATHNAME'
 LANGUAGE C STRICT VOLATILE;
 
--- Deprecated function
 CREATE FUNCTION show_limit()
 RETURNS float4
 AS 'MODULE_PATHNAME'
@@ -28,7 +26,7 @@ LANGUAGE C STRICT IMMUTABLE;
 CREATE FUNCTION similarity_op(text,text)
 RETURNS bool
 AS 'MODULE_PATHNAME'
-LANGUAGE C STRICT STABLE;  -- stable because depends on pg_trgm.similarity_threshold
+LANGUAGE C STRICT STABLE;  -- stable because depends on trgm_limit
 
 CREATE OPERATOR % (
         LEFTARG = text,
@@ -39,25 +37,35 @@ CREATE OPERATOR % (
         JOIN = contjoinsel
 );
 
-CREATE FUNCTION word_similarity(text,text)
+CREATE FUNCTION set_substring_limit(float4)
+RETURNS float4
+AS 'MODULE_PATHNAME'
+LANGUAGE C STRICT VOLATILE;
+
+CREATE FUNCTION show_substring_limit()
+RETURNS float4
+AS 'MODULE_PATHNAME'
+LANGUAGE C STRICT STABLE;
+
+CREATE FUNCTION substring_similarity(text,text)
 RETURNS float4
 AS 'MODULE_PATHNAME'
 LANGUAGE C STRICT IMMUTABLE;
 
-CREATE FUNCTION word_similarity_op(text,text)
+CREATE FUNCTION substring_similarity_op(text,text)
 RETURNS bool
 AS 'MODULE_PATHNAME'
-LANGUAGE C STRICT STABLE;  -- stable because depends on pg_trgm.word_similarity_threshold
+LANGUAGE C STRICT STABLE;  -- stable because depends on trgm_substring_limit
 
-CREATE FUNCTION word_similarity_commutator_op(text,text)
+CREATE FUNCTION substring_similarity_commutator_op(text,text)
 RETURNS bool
 AS 'MODULE_PATHNAME'
-LANGUAGE C STRICT STABLE;  -- stable because depends on pg_trgm.word_similarity_threshold
+LANGUAGE C STRICT STABLE;  -- stable because depends on trgm_substring_limit
 
 CREATE OPERATOR <% (
         LEFTARG = text,
         RIGHTARG = text,
-        PROCEDURE = word_similarity_op,
+		PROCEDURE = substring_similarity_op,
         COMMUTATOR = '%>',
         RESTRICT = contsel,
         JOIN = contjoinsel
@@ -66,7 +74,7 @@ CREATE OPERATOR <% (
 CREATE OPERATOR %> (
         LEFTARG = text,
         RIGHTARG = text,
-        PROCEDURE = word_similarity_commutator_op,
+		PROCEDURE = substring_similarity_commutator_op,
         COMMUTATOR = '<%',
         RESTRICT = contsel,
         JOIN = contjoinsel
@@ -84,12 +92,12 @@ CREATE OPERATOR <-> (
         COMMUTATOR = '<->'
 );
 
-CREATE FUNCTION word_similarity_dist_op(text,text)
+CREATE FUNCTION substring_similarity_dist_op(text,text)
 RETURNS float4
 AS 'MODULE_PATHNAME'
 LANGUAGE C STRICT IMMUTABLE;
 
-CREATE FUNCTION word_similarity_dist_commutator_op(text,text)
+CREATE FUNCTION substring_similarity_dist_commutator_op(text,text)
 RETURNS float4
 AS 'MODULE_PATHNAME'
 LANGUAGE C STRICT IMMUTABLE;
@@ -97,14 +105,14 @@ LANGUAGE C STRICT IMMUTABLE;
 CREATE OPERATOR <<-> (
         LEFTARG = text,
         RIGHTARG = text,
-        PROCEDURE = word_similarity_dist_op,
+		PROCEDURE = substring_similarity_dist_op,
         COMMUTATOR = '<->>'
 );
 
 CREATE OPERATOR <->> (
         LEFTARG = text,
         RIGHTARG = text,
-        PROCEDURE = word_similarity_dist_commutator_op,
+		PROCEDURE = substring_similarity_dist_commutator_op,
         COMMUTATOR = '<<->'
 );
 

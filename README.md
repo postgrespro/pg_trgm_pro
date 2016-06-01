@@ -16,6 +16,10 @@ The original module is located in
 module provides a new function and new operators which provide fuzzy searching
 for word in a text.
 
+**Note**. Functions of this module and functions of pg_trgm module, which
+included in the PostgreSQL 9.6, are differ. Functions of this module have other
+names and the module does not provide GUC parameters.
+
 ## License
 
 This module available from [GitHub](https://github.com/postgrespro/pg_trgm_pro)
@@ -39,25 +43,20 @@ Typical installation procedure may look like this:
 
 ## New functions and operators
 
-The pg_trgm module provides the new function.
+The pg_trgm module provides the new functions.
 
-|          Function           | Returns |                      Description
-| --------------------------- | ------- | ---------------------------------------------------
-| word_similarity(text, text) | real    | Returns a number that indicates how similar the first string to the most similar word of the second string. The function searches in the second string a most similar word not a most similar substring. The range of the result is zero (indicating that the two strings are completely dissimilar) to one (indicating that the first string is identical to one of the word of the second string).
+|            Function              | Returns |                      Description
+| -------------------------------- | ------- | ---------------------------------------------------
+| substring_similarity(text, text) | real    | Returns a number that indicates how similar the first string to the most similar word of the second string. The function searches in the second string a most similar word not a most similar substring. The range of the result is zero (indicating that the two strings are completely dissimilar) to one (indicating that the first string is identical to one of the word of the second string).
+| show_substring_limit()           | real    | Sets the current substring similarity threshold that is used by the **<%** operator.
+| set_substring_limit(real)        | real    | Sets the current substring similarity threshold that is used by the **<%** operator. The threshold must be between 0 and 1 (default is 0.6).
 
 The module provides new operators.
 
 |    Operator    | Returns |                      Description
 | -------------- | ------- | ---------------------------------------------------
-| text <% text   | boolean | Returns **true** if its arguments have a word similarity that is greater than the current word similarity threshold set by **pg_trgm.word_similarity_threshold** parameter.
-| text <<-> text | real    | Returns the **distance** between the arguments, that is one minus the **word_similarity()** value.
-
-The module provides GUC parameters.
-
-|       Parameter                   | Returns |                      Description
-| --------------------------------- | ------- | ---------------------------------------------------
-| pg_trgm.similarity_threshold      | real    | Sets the current similarity threshold that is used by the **%** operator. The threshold must be between 0 and 1 (default is 0.3).
-| pg_trgm.word_similarity_threshold | real    | Sets the current word similarity threshold that is used by the **<%** operator. The threshold must be between 0 and 1 (default is 0.6).
+| text <% text   | boolean | Returns **true** if its arguments have a substring similarity that is greater than the current substring similarity threshold set by **set_substring_limit()**.
+| text <<-> text | real    | Returns the **distance** between the arguments, that is one minus the **substring_similarity()** value.
 
 GiST and GIN indexes support the operator **<%**. The operator **<<->** is
 supported by the GiST index.
@@ -82,10 +81,10 @@ or GIN index:
 CREATE INDEX trgm_idx ON test_trgm USING GIN (t gin_trgm_ops);
 ```
 
-Now you can use an index on the **t** column for word similarity. For example:
+Now you can use an index on the **t** column for substring similarity. For example:
 
 ```sql
-SELECT t, word_similarity('word', t) AS sml
+SELECT t, substring_similarity('word', t) AS sml
   FROM test_trgm
   WHERE 'word' <% t
   ORDER BY sml DESC, t;

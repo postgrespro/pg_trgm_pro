@@ -225,7 +225,7 @@ gtrgm_consistent(PG_FUNCTION_ARGS)
 		switch (strategy)
 		{
 			case SimilarityStrategyNumber:
-			case WordSimilarityStrategyNumber:
+			case SubstringSimilarityStrategyNumber:
 				qtrg = generate_trgm(VARDATA(query),
 									 querysize - VARHDRSZ);
 				break;
@@ -294,11 +294,11 @@ gtrgm_consistent(PG_FUNCTION_ARGS)
 	switch (strategy)
 	{
 		case SimilarityStrategyNumber:
-		case WordSimilarityStrategyNumber:
-			/* Similarity search is exact. Word similarity search is inexact */
-			*recheck = (strategy == WordSimilarityStrategyNumber);
+		case SubstringSimilarityStrategyNumber:
+			/* Similarity search is exact. Substring similarity search is inexact */
+			*recheck = (strategy == SubstringSimilarityStrategyNumber);
 			nlimit = (strategy == SimilarityStrategyNumber) ?
-				similarity_threshold : word_similarity_threshold;
+				trgm_limit : trgm_substring_limit;
 
 			if (GIST_LEAF(entry))
 			{					/* all leafs contains orig trgm */
@@ -453,7 +453,7 @@ gtrgm_distance(PG_FUNCTION_ARGS)
 	char	   *cache = (char *) fcinfo->flinfo->fn_extra;
 
 	#if PG_VERSION_NUM >= 90500
-	*recheck = strategy == WordDistanceStrategyNumber;
+	*recheck = strategy == SubstringDistanceStrategyNumber;
 	#endif
 
 	/*
@@ -485,16 +485,16 @@ gtrgm_distance(PG_FUNCTION_ARGS)
 	switch (strategy)
 	{
 		case DistanceStrategyNumber:
-		case WordDistanceStrategyNumber:
+		case SubstringDistanceStrategyNumber:
 			if (GIST_LEAF(entry))
 			{					/* all leafs contains orig trgm */
 				/*
 				 * Prevent gcc optimizing the sml variable using volatile
 				 * keyword. Otherwise res can differ from the
-				 * word_similarity_dist_op() function.
+				 * substring_similarity_dist_op() function.
 				 */
 				float4 volatile sml = cnt_sml(qtrg, key,
-									strategy == WordDistanceStrategyNumber);
+									strategy == SubstringDistanceStrategyNumber);
 				res = 1.0 - sml;
 			}
 			else if (ISALLTRUE(key))

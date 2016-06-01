@@ -95,7 +95,7 @@ gin_extract_query_trgm(PG_FUNCTION_ARGS)
 	switch (strategy)
 	{
 		case SimilarityStrategyNumber:
-		case WordSimilarityStrategyNumber:
+		case SubstringSimilarityStrategyNumber:
 			trg = generate_trgm(VARDATA(val), VARSIZE(val) - VARHDRSZ);
 			break;
 		case ILikeStrategyNumber:
@@ -191,9 +191,9 @@ gin_trgm_consistent(PG_FUNCTION_ARGS)
 	switch (strategy)
 	{
 		case SimilarityStrategyNumber:
-		case WordSimilarityStrategyNumber:
+		case SubstringSimilarityStrategyNumber:
 			nlimit = (strategy == SimilarityStrategyNumber) ?
-				similarity_threshold : word_similarity_threshold;
+				trgm_limit : trgm_substring_limit;
 
 			/* Count the matches */
 			ntrue = 0;
@@ -286,9 +286,9 @@ gin_trgm_triconsistent(PG_FUNCTION_ARGS)
 	switch (strategy)
 	{
 		case SimilarityStrategyNumber:
-		case WordSimilarityStrategyNumber:
+		case SubstringSimilarityStrategyNumber:
 			nlimit = (strategy == SimilarityStrategyNumber) ?
-				similarity_threshold : word_similarity_threshold;
+				trgm_limit : trgm_substring_limit;
 
 			/* Count the matches */
 			ntrue = 0;
