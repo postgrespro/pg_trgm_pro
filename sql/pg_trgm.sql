@@ -1,5 +1,5 @@
 CREATE EXTENSION pg_trgm;
-
+set extra_float_digits = 0;
 select show_trgm('');
 select show_trgm('(*&^$@%@');
 select show_trgm('a b c');

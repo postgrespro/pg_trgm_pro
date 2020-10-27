@@ -1,5 +1,5 @@
 CREATE TABLE test_trgm2(t text COLLATE "C");
-
+set extra_float_digits = 0;
 \copy test_trgm2 from 'data/trgm2.data'
 
 select t,substring_similarity('Baykal',t) as sml from test_trgm2 where 'Baykal' <% t order by sml desc, t;
